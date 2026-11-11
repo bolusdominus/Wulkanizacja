@@ -1,0 +1,16 @@
+{
+  "name": "tire-storage",
+  "version": "1.0.0",
+  "description": "Lokalny system zarządzania przechowalnią opon",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "nodemailer": "^9.0.1",
+    "uuid": "^10.0.0"
+  },
+  "private": true
+}

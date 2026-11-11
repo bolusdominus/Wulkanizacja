@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4KołaMag - System Magazynowy i Terminarz</title>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // Domyślny publiczny serwis WWW:
+    // Użytkownik niezalogowany jest przekierowywany do widoku publicznego kalendarza
+    const isAdmin = sessionStorage.getItem('tire_admin_logged') === 'true' || localStorage.getItem('tire_admin_logged') === 'true';
+    if (!isAdmin) {
+      window.location.replace('/kalendarz.html');
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Panel boczny / Nawigacja -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="brand-icon"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        <h1>4KołaMag</h1>
+      </div>
+      
+      <nav class="sidebar-menu">
+        <button class="menu-item active" data-target="dashboard-section">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="menu-item" data-target="calendar-section">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>Kalendarz Wizyt</span>
+        </button>
+        <button class="menu-item" data-target="add-section">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Przyjmij Opony</span>
+        </button>
+        <button class="menu-item" data-target="inventory-section">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          <span>Stan Magazynu</span>
+        </button>
+        <button class="menu-item" data-target="archive-section">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Archiwum Wydanych</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="/api/backup" class="btn btn-secondary btn-backup" title="Pobierz kopię zapasową bazy danych">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Kopia Zapasowa
+        </a>
+      </div>
+    </aside>
+
+    <!-- Główny obszar roboczy -->
+    <main class="main-content">
+      <header class="main-header">
+        <div class="header-title">
+          <h2 id="section-title">Dashboard</h2>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-left: auto;">
+          <span id="admin-user-pill" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 5px 12px; border-radius: 20px;">
+            👤 <span id="admin-user-email">admin</span>
+          </span>
+          <a href="/kalendarz.html" class="btn btn-secondary btn-sm" style="text-decoration: none; padding: 6px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;" title="Otwórz podgląd publiczny dla klientów">
+            👁️ Kalendarz Publiczny
+          </a>
+          <button class="btn btn-danger btn-sm" id="btn-admin-logout" style="padding: 6px 12px; font-size: 13px;" title="Wyloguj się z panelu warsztatu">
+            🚪 Wyloguj
+          </button>
+          <div class="system-time" id="live-time">Ładowanie czasu...</div>
+        </div>
+      </header>
+
+      <div class="content-body">
+        
+        <!-- SECTION 1: DASHBOARD -->
+        <section id="dashboard-section" class="tab-content active">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon icon-total">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/></svg>
+              </div>
+              <div class="stat-info">
+                <h3>Aktywne Depozyty</h3>
+                <p class="stat-value" id="stats-total">0</p>
+              </div>
+            </div>
+            
+            <div class="stat-card" data-loc="wiata">
+              <div class="stat-icon icon-wiata">W</div>
+              <div class="stat-info">
+                <h3>Wiata</h3>
+                <p class="stat-value" id="stats-wiata">0</p>
+              </div>
+            </div>
+
+            <div class="stat-card" data-loc="Tdół">
+              <div class="stat-icon icon-tdol">T↓</div>
+              <div class="stat-info">
+                <h3>Tdół</h3>
+                <p class="stat-value" id="stats-tdol">0</p>
+              </div>
+            </div>
+
+            <div class="stat-card" data-loc="Tgóra">
+              <div class="stat-icon icon-tgora">T↑</div>
+              <div class="stat-info">
+                <h3>Tgóra</h3>
+                <p class="stat-value" id="stats-tgora">0</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-details">
+            <div class="card report-card">
+              <div class="card-header">
+                <h3>⚠️ Opony najdłużej zalegające w magazynie</h3>
+                <span class="badge badge-warning">Powyżej 180 dni</span>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Klient</th>
+                        <th>Rejestracja</th>
+                        <th>Opony</th>
+                        <th>Lokalizacja</th>
+                        <th>Data przyjęcia</th>
+                        <th>Dni w magazynie</th>
+                      </tr>
+                    </thead>
+                    <tbody id="aging-report-table-body">
+                      <tr>
+                        <td colspan="6" class="text-center text-muted">Brak zalegających depozytów.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 2: KALENDARZ WIZYT (TERMINARZ) -->
+        <section id="calendar-section" class="tab-content">
+          <div class="card calendar-card">
+            <div class="calendar-toolbar">
+              <div class="calendar-nav-group">
+                <button class="btn btn-secondary" id="cal-prev-day" title="Poprzedni dzień">&larr; Poprzedni</button>
+                <button class="btn btn-primary" id="cal-today">Dzisiaj</button>
+                <button class="btn btn-secondary" id="cal-next-day" title="Następny dzień">Następny &rarr;</button>
+                <input type="date" id="cal-date-picker" class="cal-date-input">
+              </div>
+
+              <div class="calendar-center-title">
+                <h3 id="cal-selected-date-label">Ładowanie daty...</h3>
+                <span class="cal-status-pill" id="cal-day-status-pill">Dzień roboczy</span>
+              </div>
+
+              <div class="calendar-action-group">
+                <button class="btn btn-ai-agent" id="btn-open-ai-modal" title="Planuj z inteligentnym Asystentem AI (Gemini AI Studio + Głos)">
+                  ✨ Agent AI (Głos)
+                </button>
+                <button class="btn btn-warning" id="btn-quick-find-slot" title="Znajdź wolny termin">⚡ Szukaj wolnego terminu</button>
+                <button class="btn btn-success" id="btn-add-appointment">+ Nowa Wizyta</button>
+                <button class="btn btn-secondary" id="btn-open-config-modal" title="Konfiguracja godzin pracy i usług">⚙️ Godziny i Usługi</button>
+                <a href="/kalendarz.html" target="_blank" class="btn btn-info" style="text-decoration: none;" title="Otwórz podgląd dla klientów (bez danych wrażliwych)">🔗 Podgląd Publiczny</a>
+              </div>
+            </div>
+
+            <div class="calendar-info-banner" id="cal-info-banner">
+              <span id="cal-hours-info">🕒 Godziny pracy: 08:00 - 18:00</span>
+              <span class="banner-divider">|</span>
+              <span>🚗 Obsługa 2 aut jednocześnie (Stanowisko 1 i 2)</span>
+              <span class="banner-divider">|</span>
+              <span id="cal-appointments-count">Zaplanowanych wizyt: 0</span>
+            </div>
+
+            <div id="cal-closed-alert" class="alert-banner" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px 16px; border-radius: 8px; margin: 15px 20px; font-weight: 500;">
+              ⚠️ Zakład jest w tym dniu nieczynny (niedziela lub polskie święto państwowe). Ręczne dodanie wizyty jest możliwe w razie potrzeby.
+            </div>
+
+            <!-- Widok dwóch stanowisk równoległych -->
+            <div class="calendar-stations-wrapper">
+              <!-- Stanowisko 1 -->
+              <div class="station-board">
+                <div class="station-board-header header-st1">
+                  <div class="st-badge">Stanowisko 1 (Podnośnik A)</div>
+                  <span class="st-car-count" id="count-st1">0 aut</span>
+                </div>
+                <div class="station-timeline" id="timeline-st1">
+                  <!-- Wizyty renderowane dynamicznie -->
+                </div>
+              </div>
+
+              <!-- Stanowisko 2 -->
+              <div class="station-board">
+                <div class="station-board-header header-st2">
+                  <div class="st-badge">Stanowisko 2 (Podnośnik B)</div>
+                  <span class="st-car-count" id="count-st2">0 aut</span>
+                </div>
+                <div class="station-timeline" id="timeline-st2">
+                  <!-- Wizyty renderowane dynamicznie -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 3: PRZYJMIJ OPONY -->
+        <section id="add-section" class="tab-content">
+          <div class="card form-card">
+            <div class="card-header">
+              <h3>Formularz przyjęcia opon do przechowalni</h3>
+            </div>
+            <div class="card-body">
+              <form id="add-deposit-form">
+                <div class="form-grid">
+                  <div class="form-section-title">Dane Klienta</div>
+                  
+                  <div class="form-group">
+                    <label for="clientName">Imię i Nazwisko *</label>
+                    <input type="text" id="clientName" name="clientName" required placeholder="np. Jan Kowalski">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="clientPhone">Numer Telefonu *</label>
+                    <input type="tel" id="clientPhone" name="clientPhone" required placeholder="np. 500 600 700">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="clientEmail">Adres E-mail (opcja)</label>
+                    <input type="email" id="clientEmail" name="clientEmail" placeholder="np. jan.kowalski@gmail.com">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="carLicensePlate">Numer Rejestracyjny samochodu *</label>
+                    <input type="text" id="carLicensePlate" name="carLicensePlate" required placeholder="np. WI 12345" style="text-transform: uppercase;">
+                  </div>
+
+                  <div class="form-section-title">Dane Opon i Magazynu</div>
+
+                  <div class="form-group">
+                    <label for="tireSize">Rozmiar opon</label>
+                    <input type="text" id="tireSize" name="tireSize" placeholder="np. 205/55 R16">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="tireBrand">Marka/Model opon</label>
+                    <input type="text" id="tireBrand" name="tireBrand" placeholder="np. Michelin Primacy 4">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="tireSeason">Sezon</label>
+                    <select id="tireSeason" name="tireSeason">
+                      <option value="Zimowe" selected>Zimowe</option>
+                      <option value="Letnie">Letnie</option>
+                      <option value="Całoroczne">Całoroczne</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="tireRimType">Felgi</label>
+                    <select id="tireRimType" name="tireRimType">
+                      <option value="Brak" selected>Brak (same opony)</option>
+                      <option value="Stalowe">Stalowe</option>
+                      <option value="Aluminiowe">Aluminiowe</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="quantity">Ilość opon (szt.) *</label>
+                    <input type="number" id="quantity" name="quantity" min="1" max="24" value="4" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="location">Lokalizacja w magazynie *</label>
+                    <select id="location" name="location" required>
+                      <option value="wiata" selected>Wiata</option>
+                      <option value="Tdół">Tdół (Tgóra dół)</option>
+                      <option value="Tgóra">Tgóra (Tgóra góra)</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="depositDate">Data przyjęcia</label>
+                    <input type="date" id="depositDate" name="depositDate">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="price">Opłata (PLN)</label>
+                    <input type="number" id="price" name="price" placeholder="np. 150" value="150">
+                  </div>
+
+                  <div class="form-group full-width">
+                    <label for="notes">Uwagi / Stan opon</label>
+                    <textarea id="notes" name="notes" rows="3" placeholder="np. Prawy przód 4.5mm, pozostałe ok. Felgi porysowane."></textarea>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button type="reset" class="btn btn-secondary">Wyczyść</button>
+                  <button type="submit" class="btn btn-primary">Zapisz Depozyt</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 4: STAN MAGAZYNU (WYSZUKIWARKA) -->
+        <section id="inventory-section" class="tab-content">
+          <div class="card">
+            <div class="card-header search-header-layout">
+              <div class="search-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="inventory-search" placeholder="Wyszukaj po rejestracji, nazwisku lub telefonie...">
+              </div>
+              <div class="filter-group">
+                <button class="filter-btn active" data-filter="all">Wszystko</button>
+                <button class="filter-btn" data-filter="wiata">Wiata</button>
+                <button class="filter-btn" data-filter="Tdół">Tdół</button>
+                <button class="filter-btn" data-filter="Tgóra">Tgóra</button>
+                <button class="filter-btn btn-toggle-aging" id="filter-aging-only">⚠️ Tylko zalegające</button>
+                <button class="btn btn-success" id="btn-export-inventory" style="margin-left: 10px; padding: 6px 12px; font-size: 13px;">📥 Eksportuj (.xlsx)</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="inventory-data-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Klient i Telefon</th>
+                      <th>Nr Rejestracyjny</th>
+                      <th>Opony</th>
+                      <th>Felgi</th>
+                      <th>Lokalizacja</th>
+                      <th>Data przyjęcia</th>
+                      <th>Dni</th>
+                      <th class="text-right no-export">Akcja</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inventory-table-body">
+                    <tr>
+                      <td colspan="9" class="text-center text-muted">Ładowanie danych magazynu...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 5: ARCHIWUM -->
+        <section id="archive-section" class="tab-content">
+          <div class="card">
+            <div class="card-header search-header-layout">
+              <div class="search-box">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="archive-search" placeholder="Szukaj w archiwum...">
+              </div>
+              <button class="btn btn-success" id="btn-export-archive" style="padding: 6px 12px; font-size: 13px;">📥 Eksportuj (.xlsx)</button>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table" id="archive-data-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Klient / Telefon</th>
+                      <th>Nr Rejestracyjny</th>
+                      <th>Opony</th>
+                      <th>Lokalizacja</th>
+                      <th>Przyjęto</th>
+                      <th>Wydano</th>
+                      <th>Czas przechowywania</th>
+                    </tr>
+                  </thead>
+                  <tbody id="archive-table-body">
+                    <tr>
+                      <td colspan="8" class="text-center text-muted">Ładowanie danych archiwum...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Potwierdzenia Wydania -->
+  <div class="modal" id="release-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Wydanie zapasu powierzonego</h3>
+        <button class="close-modal" id="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Potwierdzasz wydanie opon dla klienta: <strong id="modal-client-name">Jan Kowalski</strong>?</p>
+        <p>Samochód: <strong id="modal-car-plate">WI 12345</strong></p>
+        <p>Lokalizacja w magazynie: <strong id="modal-location">wiata</strong></p>
+        
+        <div class="form-group" style="margin-top: 15px;">
+          <label for="release-date-input">Data wydania</label>
+          <input type="date" id="release-date-input">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-release">Anuluj</button>
+        <button class="btn btn-success" id="btn-confirm-release">Zatwierdź i Wydaj</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Przenoszenia -->
+  <div class="modal" id="move-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Zmiana lokalizacji depozytu</h3>
+        <button class="close-modal" id="btn-close-move-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Przenosisz opony klienta: <strong id="move-modal-client-name">Jan Kowalski</strong></p>
+        <p>Samochód: <strong id="move-modal-car-plate">WI 12345</strong></p>
+        <p>Obecna lokalizacja: <strong id="move-modal-current-location">wiata</strong></p>
+        
+        <div class="form-group" style="margin-top: 15px;">
+          <label for="move-location-select">Wybierz nową lokalizację *</label>
+          <select id="move-location-select">
+            <option value="wiata">Wiata</option>
+            <option value="Tdół">Tdół (Tgóra dół)</option>
+            <option value="Tgóra">Tgóra (Tgóra góra)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-move">Anuluj</button>
+        <button class="btn btn-primary" id="btn-confirm-move">Zatwierdź i Przenieś</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Dodawanie / Edycja Wizyty w Kalendarzu -->
+  <div class="modal" id="appointment-modal">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h3 id="app-modal-title">Zaplanuj Nową Wizytę</h3>
+        <button class="close-modal" id="btn-close-app-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="appointment-form">
+          <input type="hidden" id="app-id">
+          
+          <div class="form-grid">
+            <!-- Podstawowe pola - zawsze widoczne i zwięzłe pod telefon -->
+            <div class="form-group">
+              <label for="app-car-plate">Nr rejestracyjny *</label>
+              <input type="text" id="app-car-plate" required placeholder="np. PRA 51111" style="text-transform: uppercase; font-weight: 700;">
+            </div>
+
+            <div class="form-group">
+              <label for="app-client-acronym">Akronim klienta *</label>
+              <input type="text" id="app-client-acronym" placeholder="np. BARTEK, FLOTA" style="text-transform: uppercase;">
+            </div>
+
+            <div class="form-group">
+              <label for="app-date">Data wizyty *</label>
+              <input type="date" id="app-date" required>
+            </div>
+
+            <div class="form-group">
+              <label for="app-start-time">Godzina rozpoczęcia *</label>
+              <input type="time" id="app-start-time" required step="900">
+            </div>
+
+            <div class="form-group">
+              <label for="app-service-select">Typ usługi / kół *</label>
+              <select id="app-service-select">
+                <!-- Opcje ładowane dynamicznie z konfiguracji -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="app-station">Stanowisko warsztatowe *</label>
+              <select id="app-station">
+                <option value="1">Stanowisko 1 (Podnośnik A)</option>
+                <option value="2">Stanowisko 2 (Podnośnik B)</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width" style="margin-top: 4px;">
+              <button type="button" class="btn btn-warning" id="btn-fill-next-slot" style="width: 100%; height: 38px;">
+                ⚡ Ustaw najbliższy wolny termin
+              </button>
+            </div>
+
+            <!-- Opcje zaawansowane zwijane domyślnie, aby nie zajmować miejsca na telefonie -->
+            <details id="app-advanced-details" style="grid-column: 1 / -1; margin-top: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px;">
+              <summary style="cursor: pointer; font-size: 13px; font-weight: 600; color: var(--color-primary); user-select: none;">
+                🔽 Więcej opcji (telefon, pełne dane, cena, uwagi)
+              </summary>
+              <div class="form-grid" style="margin-top: 12px; gap: 12px;">
+                <div class="form-group">
+                  <label for="app-client-name">Pełne Imię i Nazwisko / Firma</label>
+                  <input type="text" id="app-client-name" placeholder="np. Jan Kowalski">
+                </div>
+
+                <div class="form-group">
+                  <label for="app-client-phone">Numer telefonu</label>
+                  <input type="tel" id="app-client-phone" placeholder="np. 883 618 180">
+                </div>
+
+                <div class="form-group">
+                  <label for="app-car-model">Model auta / opony</label>
+                  <input type="text" id="app-car-model" placeholder="np. Skoda Octavia, 205/55 R16">
+                </div>
+
+                <div class="form-group">
+                  <label for="app-duration">Ręczny czas trwania (minuty)</label>
+                  <div style="display: flex; gap: 6px;">
+                    <input type="number" id="app-duration" min="15" max="240" step="15" value="45">
+                    <div class="btn-group-pill">
+                      <button type="button" class="btn btn-sm btn-secondary btn-set-dur" data-dur="30">30m</button>
+                      <button type="button" class="btn btn-sm btn-secondary btn-set-dur" data-dur="45">45m</button>
+                      <button type="button" class="btn btn-sm btn-secondary btn-set-dur" data-dur="60">60m</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="app-price">Cena usługi (PLN)</label>
+                  <input type="number" id="app-price" placeholder="np. 140" value="140">
+                </div>
+
+                <div class="form-group">
+                  <label for="app-status">Status wizyty</label>
+                  <select id="app-status">
+                    <option value="scheduled">Zaplanowana (Oczekuje)</option>
+                    <option value="completed">Zrealizowana (Wykonana)</option>
+                    <option value="cancelled">Odwołana</option>
+                  </select>
+                </div>
+
+                <div class="form-group full-width">
+                  <label for="app-notes">Uwagi / notatka</label>
+                  <textarea id="app-notes" rows="2" placeholder="Dodatkowe informacje do zlecenia"></textarea>
+                </div>
+              </div>
+            </details>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" id="btn-delete-app" style="display: none; margin-right: auto;">Usuń wizytę</button>
+        <button class="btn btn-secondary" id="btn-cancel-app">Anuluj</button>
+        <button class="btn btn-primary" id="btn-save-app">Zapisz Wizytę</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Asystent Szybkiego Wolnego Terminu -->
+  <div class="modal" id="quick-slot-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>⚡ Wyszukiwarka Pierwszego Wolnego Terminu</h3>
+        <button class="close-modal" id="btn-close-quick-slot-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 13px;">
+          Wybierz rodzaj usługi lub czas trwania. System sprawdzi godziny pracy warsztatu, ominie święta i znajdzie najbliższy wolny slot na Stanowisku 1 lub 2.
+        </p>
+
+        <div class="form-group">
+          <label for="quick-service-select">Wybierz usługę / typ kół:</label>
+          <select id="quick-service-select">
+            <!-- Dynamicznie ładowane -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Czas trwania:</label>
+          <div style="display: flex; gap: 10px; margin-top: 5px;">
+            <label><input type="radio" name="quick-dur" value="30"> 30 min (Szybki)</label>
+            <label><input type="radio" name="quick-dur" value="45" checked> 45 min (Stal / Alu &le; 17")</label>
+            <label><input type="radio" name="quick-dur" value="60"> 60 min (Alu &gt; 17" / Bus)</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="quick-start-date">Szukaj począwszy od dnia:</label>
+          <input type="date" id="quick-start-date">
+        </div>
+
+        <div id="quick-result-box" style="display: none; margin-top: 20px; padding: 15px; border-radius: 8px; background: rgba(56, 189, 248, 0.1); border: 1px solid var(--color-primary);">
+          <h4 style="color: var(--color-primary); margin-bottom: 6px;">Znaleziono najbliższy wolny termin!</h4>
+          <p id="quick-result-text" style="font-size: 15px; font-weight: 600;"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-quick-slot">Zamknij</button>
+        <button class="btn btn-warning" id="btn-find-slot-action">🔍 Znajdź termin</button>
+        <button class="btn btn-success" id="btn-use-found-slot" style="display: none;">Użyj i Zaplanuj</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Konfiguracja Godzin Pracy i Słownika Usług -->
+  <div class="modal" id="calendar-config-modal">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h3>⚙️ Konfiguracja Godzin Pracy i Słownika Usług</h3>
+        <button class="close-modal" id="btn-close-config-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 13px;">
+          Zmiany zapisują się w pliku <code>calendar_config.json</code> i wchodzą w życie natychmiast, bez konieczności restartu lub rekompilacji programu.
+        </p>
+
+        <!-- Nagłówek kalendarza publicznego -->
+        <div class="form-group" style="margin-bottom: 20px; background: rgba(56, 189, 248, 0.08); padding: 14px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.2);">
+          <label for="cfg-public-header" style="font-weight: 700; color: var(--color-primary); margin-bottom: 6px; display: block;">
+            📢 Nagłówek nad publicznym kalendarzem (Nazwa warsztatu i telefon):
+          </label>
+          <input type="text" id="cfg-public-header" placeholder="np. Wulkanizacja Michał - rezerwacja terminu 600223669" style="width: 100%; padding: 8px 12px; font-size: 14px; background: var(--bg-primary); color: #fff; border: 1px solid var(--border-color); border-radius: 6px;">
+          <small style="color: var(--text-muted); font-size: 12px; margin-top: 4px; display: block;">
+            Ten tekst wyświetla się na samej górze publicznego terminarza dla klientów.
+          </small>
+
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.1);">
+            <label for="cfg-allowed-emails" style="font-weight: 700; color: #fff; font-size: 13px; display: block; margin-bottom: 4px;">
+              📧 Dozwolone adresy E-mail z dostępem do panelu warsztatu:
+            </label>
+            <textarea id="cfg-allowed-emails" rows="2" placeholder="np. michal@wulkanizacja.pl, biuro@4kola.pl, admin@warsztat.pl" style="width: 100%; padding: 8px 12px; font-size: 13px; background: var(--bg-primary); color: #fff; border: 1px solid var(--border-color); border-radius: 6px; resize: vertical;"></textarea>
+            <small style="color: var(--text-muted); font-size: 11px; margin-top: 2px; display: block;">
+              Wpisz adresy e-mail oddzielone przecinkiem lub w nowych liniach. Tylko osoby logujące się jednym z tych adresów wejdą do panelu.
+            </small>
+          </div>
+
+          <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+            <div>
+              <label for="cfg-admin-password" style="font-weight: 700; color: #fff; font-size: 13px;">
+                🔐 Hasło dostępu do Panelu Warsztatu:
+              </label>
+              <div style="font-size: 12px; color: var(--text-muted);">Hasło wymagane przy logowaniu do panelu warsztatu.</div>
+            </div>
+            <input type="text" id="cfg-admin-password" placeholder="admin" value="admin" style="padding: 6px 12px; font-size: 13px; background: var(--bg-primary); color: #fff; border: 1px solid var(--border-color); border-radius: 6px; width: 180px;">
+          </div>
+        </div>
+
+        <h4 style="color: var(--color-primary); margin-bottom: 10px;">Godziny pracy w poszczególnych miesiącach:</h4>
+        <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+          <table class="data-table" id="months-config-table">
+            <thead>
+              <tr>
+                <th>Miesiąc</th>
+                <th>Pon - Pt (Od)</th>
+                <th>Pon - Pt (Do)</th>
+                <th>Sobota (Od)</th>
+                <th>Sobota (Do)</th>
+                <th>Uwagi (np. sezon)</th>
+              </tr>
+            </thead>
+            <tbody id="months-config-tbody">
+              <!-- Wypełniane dynamicznie -->
+            </tbody>
+          </table>
+        </div>
+
+        <h4 style="color: var(--color-primary); margin: 20px 0 10px;">Słownik usług i zakładane czasy trwania:</h4>
+        <div class="table-responsive">
+          <table class="data-table" id="services-config-table">
+            <thead>
+              <tr>
+                <th>Nazwa usługi</th>
+                <th>Zakładany czas (min)</th>
+                <th>Domyślna cena (PLN)</th>
+              </tr>
+            </thead>
+            <tbody id="services-config-tbody">
+              <!-- Wypełniane dynamicznie -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-config">Anuluj</button>
+        <button class="btn btn-primary" id="btn-save-config">Zapisz Ustawienia</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Asystent Planowania AI (Gemini Studio + Głos) -->
+  <div class="modal" id="ai-agent-modal">
+    <div class="modal-content modal-lg">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1e1b4b, #172554); border-bottom: 1px solid #3b82f6;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 24px;">🤖</span>
+          <div>
+            <h3 style="color: #fff; margin: 0; font-size: 17px;">Asystent Planowania AI (Google Gemini)</h3>
+            <p style="margin: 0; font-size: 12px; color: #93c5fd;">Głosowe i tekstowe planowanie wizyt w warsztacie</p>
+          </div>
+        </div>
+        <button class="close-modal" id="btn-close-ai-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        
+        <!-- Pasek konfiguracji klucza API Google AI Studio -->
+        <div id="ai-api-key-box" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span>🔑</span>
+              <span style="font-size: 13px; font-weight: 600;">Klucz API Google AI Studio:</span>
+              <span id="ai-key-status" class="badge" style="background: #ef4444; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 4px;">Nieskonfigurowany</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-key-input" style="padding: 3px 8px; font-size: 12px;">⚙️ Zmień / Wpisz klucz</button>
+          </div>
+          <div id="ai-key-input-row" style="display: none; margin-top: 10px; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <input type="password" id="ai-gemini-key-input" placeholder="Wklej klucz z AI Studio (np. AIzaSy...)" style="flex-grow: 1; min-width: 260px; padding: 6px 10px; font-size: 13px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: #fff;">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-save-ai-key">Zapisz klucz</button>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size: 11px; color: var(--color-primary); text-decoration: none; margin-left: 6px;">Pobierz bezpłatny klucz z Google AI Studio &rarr;</a>
+          </div>
+        </div>
+
+        <!-- Sekcja Mów / Wpisz polecenie -->
+        <div style="text-align: center; margin-bottom: 16px;">
+          <div style="margin-bottom: 12px;">
+            <button type="button" id="btn-ai-mic" class="mic-btn" title="Kliknij, aby mówić do mikrofonu">
+              <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </button>
+          </div>
+          <div id="ai-mic-label" style="font-weight: 700; font-size: 15px; color: var(--color-primary);">
+            Kliknij mikrofon i powiedz polecenie
+          </div>
+          <p id="ai-mic-sub" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+            np. <em>&quot;podaj najbliższy wolny termin i wpisz Bolka na jutro na Alu Premium&quot;</em>
+          </p>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <textarea id="ai-prompt-input" rows="2" placeholder="Wpisz lub podyktuj polecenie głosowo..." style="width: 100%; padding: 10px 14px; font-size: 14px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; color: #fff; resize: vertical;"></textarea>
+        </div>
+
+        <!-- Szybkie przykłady poleceń -->
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; align-items: center;">
+          <span style="font-size: 12px; color: var(--text-secondary);">Przykłady:</span>
+          <button type="button" class="ai-chip" data-prompt="podaj najbliższy wolny termin i wpisz Bolka na jutro na Alu Premium">⚡ Wpisz Bolka na jutro na Alu Premium</button>
+          <button type="button" class="ai-chip" data-prompt="podaj najbliższy wolny termin na koła stalowe">🔍 Wolny termin na koła stalowe</button>
+          <button type="button" class="ai-chip" data-prompt="wpisz Bolka na jutro na 14:00 alu premium">📅 Bolek na jutro na 14:00 (Alu)</button>
+        </div>
+
+        <!-- Przycisk wykonania polecenia -->
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 10px;">
+          <button type="button" class="btn btn-secondary" id="btn-clear-ai-prompt">Wyczyść</button>
+          <button type="button" class="btn btn-ai-agent" id="btn-execute-ai-plan" style="padding: 10px 22px; font-weight: 700; font-size: 14px;">
+            ✨ Wykonaj polecenie z Gemini
+          </button>
+        </div>
+
+        <!-- Loader myślenia Agenta -->
+        <div id="ai-loading-box" style="display: none; text-align: center; padding: 25px 15px;">
+          <div class="ai-spinner"></div>
+          <p style="margin-top: 12px; font-weight: 600; color: #a78bfa;" id="ai-loading-text">
+            Agent Gemini analizuje wolne sloty i konfigurację warsztatu...
+          </p>
+        </div>
+
+        <!-- Wynik działania Agenta -->
+        <div id="ai-result-box" style="display: none; background: rgba(16, 185, 129, 0.12); border: 1px solid #10b981; border-radius: 8px; padding: 16px; margin-top: 14px;">
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <span style="font-size: 26px;">🤖</span>
+            <div style="flex-grow: 1;">
+              <h4 style="color: #fff; margin-bottom: 4px;" id="ai-result-title">Zaplanowano wizytę!</h4>
+              <p id="ai-result-message" style="color: #e2e8f0; font-size: 14px; margin-bottom: 12px; line-height: 1.5;"></p>
+              
+              <div id="ai-result-details" style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; font-size: 13px;">
+                <!-- Wypełniane dynamicznie -->
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary" id="btn-ai-replay-voice" style="margin-right: auto;">🔊 Odsłuchaj na głos</button>
+            <button type="button" class="btn btn-secondary" id="btn-ai-cancel-res">Anuluj</button>
+            <button type="button" class="btn btn-success" id="btn-ai-confirm-save">✓ Zapisz i przejdź do tego dnia</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</body>
+</html>

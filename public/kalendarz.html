@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminarz Wulkanizacji - 4KołaMag</title>
+  <style>
+    :root {
+      --bg-main: #0b0f19;
+      --bg-card: #151d30;
+      --bg-header: #101726;
+      --border-color: #23314d;
+      --grid-line: #1c273e;
+      --grid-line-sub: #162033;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --color-primary: #38bdf8;
+      --color-today: #0ea5e9;
+
+      /* Kolory usług (etykiet) */
+      --color-stal: #0284c7;       /* Błękitny - Stal */
+      --color-alu: #10b981;        /* Szmaragdowy - Alu <= 17" */
+      --color-alupremium: #8b5cf6; /* Fioletowy - AluPremium > 17" */
+      --color-bus: #f59e0b;        /* Bursztynowy - Bus */
+      --color-szybki: #ec4899;     /* Różowy - Szybki */
+
+      --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Pasek nawigacji górny */
+    .cal-header {
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      flex-wrap: wrap;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      color: var(--color-primary);
+    }
+
+    .brand-title {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      color: var(--text-main);
+    }
+
+    .cal-nav-center {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn {
+      background: #1e293b;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 7px 13px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .btn:hover {
+      background: var(--color-primary);
+      color: #0b0f19;
+      border-color: var(--color-primary);
+    }
+
+    .btn-today {
+      background: #0284c7;
+      border-color: #0284c7;
+      color: #fff;
+    }
+
+    .week-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+      min-width: 200px;
+      text-align: center;
+      letter-spacing: 0.3px;
+    }
+
+    /* Pasek legendy */
+    .legend-bar {
+      background: #0f172a;
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+    }
+
+    .legend-items {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+    }
+
+    .legend-pill {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .hours-info-pill {
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--color-primary);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    /* Główny kontener siatki kalendarza */
+    .calendar-container {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-x: auto;
+      background: var(--bg-main);
+    }
+
+    .calendar-grid {
+      min-width: 900px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+
+    /* Wiersz nagłówków dni */
+    .grid-header-row {
+      display: grid;
+      grid-template-columns: 60px repeat(6, 1fr);
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 61px;
+      z-index: 40;
+    }
+
+    .header-time-cell {
+      border-right: 1px solid var(--border-color);
+    }
+
+    .day-header-cell {
+      padding: 12px 8px;
+      text-align: center;
+      border-right: 1px solid var(--border-color);
+    }
+
+    .day-header-cell:last-child {
+      border-right: none;
+    }
+
+    .day-name {
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .day-num {
+      font-size: 18px;
+      font-weight: 700;
+      margin-top: 2px;
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      line-height: 32px;
+      border-radius: 50%;
+    }
+
+    .day-header-cell.today .day-name {
+      color: var(--color-today);
+    }
+
+    .day-header-cell.today .day-num {
+      background: var(--color-today);
+      color: #fff;
+    }
+
+    /* Ciało siatki */
+    .grid-body {
+      display: grid;
+      grid-template-columns: 60px repeat(6, 1fr);
+      position: relative;
+    }
+
+    /* Kolumna etykiet godzin po lewej */
+    .time-gutter {
+      border-right: 1px solid var(--border-color);
+      background: var(--bg-header);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .time-slot-label {
+      height: 64px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #cbd5e1;
+      text-align: right;
+      padding-right: 10px;
+      transform: translateY(-8px);
+      user-select: none;
+    }
+
+    /* Kolumny poszczególnych dni */
+    .day-column {
+      position: relative;
+      border-right: 1px solid var(--border-color);
+      background: var(--bg-card);
+    }
+
+    .day-column:last-child {
+      border-right: none;
+    }
+
+    /* Poziome linie godzinowe */
+    .hour-line {
+      height: 64px;
+      border-bottom: 1px solid var(--grid-line);
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    .hour-line::after {
+      content: '';
+      position: absolute;
+      top: 32px;
+      left: 0;
+      right: 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+      pointer-events: none;
+    }
+
+    /* Dzień nieczynny (święto / wolne) */
+    .day-closed-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(15, 23, 42, 0.85),
+        rgba(15, 23, 42, 0.85) 15px,
+        rgba(30, 41, 59, 0.6) 15px,
+        rgba(30, 41, 59, 0.6) 30px
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      pointer-events: none;
+    }
+
+    /* Klocki wizyt / sesji */
+    .event-block {
+      position: absolute;
+      border-radius: 8px;
+      padding: 6px 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      border: 1.5px solid rgba(255,255,255,0.22);
+      z-index: 25;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+      min-height: 40px;
+      box-sizing: border-box;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .event-block:hover {
+      transform: scale(1.02);
+      z-index: 35;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.65);
+    }
+
+    .day-closed-bg-stripes {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(15, 23, 42, 0.5),
+        rgba(15, 23, 42, 0.5) 15px,
+        rgba(30, 41, 59, 0.35) 15px,
+        rgba(30, 41, 59, 0.35) 30px
+      );
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .day-closed-sub-badge {
+      position: absolute;
+      bottom: 8px;
+      left: 4px;
+      right: 4px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #f59e0b;
+      font-size: 11px;
+      font-weight: 700;
+      text-align: center;
+      padding: 3px 6px;
+      border-radius: 4px;
+      z-index: 4;
+      pointer-events: none;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Przełącznik trybu Tydzień / Dzień */
+    .view-switch-group {
+      display: inline-flex;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .btn-switch {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-switch.active {
+      background: var(--color-primary);
+      color: #0b0f19;
+    }
+
+    .btn-switch:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+    }
+
+    .btn-back-week {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-back-week:hover {
+      background: #0369a1;
+      color: #fff;
+    }
+
+    /* Interaktywne nagłówki i kolumny dni */
+    .day-header-cell.clickable {
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+    }
+
+    .day-header-cell.clickable:hover {
+      background: #1e293b;
+    }
+
+    .day-header-cell.clickable:hover .day-num {
+      box-shadow: 0 0 0 2px var(--color-primary);
+    }
+
+    .day-zoom-pill {
+      display: inline-block;
+      font-size: 10px;
+      color: var(--color-primary);
+      background: rgba(56, 189, 248, 0.12);
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-top: 3px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .day-column.clickable-col {
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    .day-column.clickable-col:hover {
+      background-color: rgba(30, 41, 59, 0.4);
+    }
+
+    /* Widok pojedynczego dnia (Fokus na 1 dzień) */
+    .day-focus-bar {
+      background: #101726;
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .day-focus-date-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .day-focus-status-badge {
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--color-primary);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .day-focus-header-row {
+      display: grid;
+      grid-template-columns: 70px 1fr 1fr;
+    }
+
+    .day-focus-grid-body {
+      display: grid;
+      grid-template-columns: 70px 1fr 1fr;
+      position: relative;
+    }
+
+    .station-header-cell {
+      padding: 12px 18px;
+      text-align: left;
+      border-right: 1px solid var(--border-color);
+      background: #131b2e;
+    }
+
+    .station-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .station-subtitle {
+      margin-top: 4px;
+    }
+
+    .count-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .count-pill.occupied {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+    .count-pill.free {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .event-block.event-focus-day {
+      left: 1.5%;
+      width: 97%;
+      min-height: 44px;
+      padding: 8px 14px;
+    }
+
+    .event-badge {
+      font-weight: 800;
+      font-size: 13.5px;
+      letter-spacing: 0.2px;
+      color: #ffffff;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-time {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #ffffff;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      width: fit-content;
+      border: 1px solid rgba(255,255,255,0.15);
+      letter-spacing: 0.2px;
+    }
+
+    .event-station {
+      display: none;
+    }
+
+    /* Style dla 2 stanowisk (kolumny lewa / prawa na osi czasu) */
+    .event-st-1 {
+      left: 2%;
+      width: 47%;
+    }
+
+    .event-st-2 {
+      left: 51%;
+      width: 47%;
+    }
+
+    /* Styl pojedynczego zdarzenia na całą szerokość jeśli nie nachodzi */
+    .event-full {
+      left: 3%;
+      width: 94%;
+    }
+
+    /* Kolory klocków wg typu kół / sesji */
+    .type-stal {
+      background: linear-gradient(135deg, #0284c7, #075985);
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    .type-alu {
+      background: linear-gradient(135deg, #059669, #065f46);
+      color: #fff;
+      border-color: #34d399;
+    }
+
+    .type-alupremium {
+      background: linear-gradient(135deg, #7c3aed, #5b21b6);
+      color: #fff;
+      border-color: #c084fc;
+    }
+
+    .type-bus {
+      background: linear-gradient(135deg, #d97706, #92400e);
+      color: #fff;
+      border-color: #fcd34d;
+    }
+
+    .type-szybki {
+      background: linear-gradient(135deg, #db2777, #9d174d);
+      color: #fff;
+      border-color: #f472b6;
+    }
+      border-color: #f472b6;
+    }
+
+    /* Stopka kontaktowa */
+    .cal-footer {
+      background: var(--bg-header);
+      border-top: 1px solid var(--border-color);
+      padding: 16px 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .cal-footer strong {
+      color: var(--color-primary);
+      font-size: 15px;
+    }
+
+    /* Modal logowania */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal-content {
+      background: #111827;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #162033;
+    }
+    .modal-header h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal-close-btn:hover { color: #fff; }
+    .modal-body {
+      padding: 20px;
+    }
+    .modal-footer {
+      padding: 14px 20px;
+      background: #0f172a;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #cbd5e1;
+    }
+    .form-input {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus {
+      border-color: var(--color-primary);
+    }
+    .error-msg {
+      color: #ef4444;
+      font-size: 13px;
+      margin-top: 8px;
+      font-weight: 600;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Pasek górny: Nawigacja po tygodniach -->
+  <header class="cal-header">
+    <div class="brand-section">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="brand-icon"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      <div class="brand-title" id="public-main-title">Terminarz Wulkanizacji</div>
+    </div>
+
+    <!-- Środkowa strefa nawigacji -->
+    <div class="cal-nav-center">
+      <div class="nav-controls">
+        <button class="btn" id="btn-prev-period">&larr; Poprzedni</button>
+        <button class="btn btn-today" id="btn-this-period">Dziś</button>
+        <button class="btn" id="btn-next-period">Następny &rarr;</button>
+      </div>
+
+      <div class="week-title" id="week-range-label">
+        Ładowanie...
+      </div>
+
+      <div class="view-switch-group">
+        <button class="btn-switch active" id="btn-mode-week" title="Widok całego tygodnia (Pon-Sob)">Tydzień</button>
+        <button class="btn-switch" id="btn-mode-day" title="Fokus na 1 wybrany dzień">Dzień</button>
+      </div>
+
+      <button class="btn btn-back-week" id="btn-back-to-week" style="display: none;" onclick="switchToWeekView()">
+        &larr; Wróć do tygodnia
+      </button>
+    </div>
+
+    <!-- Prawa strefa: Zaloguj -->
+    <div style="display: flex; align-items: center;">
+      <button class="btn" id="btn-login-open" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-weight: 700; border: 1px solid #38bdf8; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(37,99,235,0.3); cursor: pointer; padding: 7px 16px; border-radius: 6px;">
+        🔐 Zaloguj
+      </button>
+    </div>
+  </header>
+
+  <!-- Pasek Nagłówka konfigurowany przez Administratora -->
+  <div class="public-banner-announcement" id="public-banner-announcement" style="background: linear-gradient(90deg, #0369a1, #0284c7); color: #fff; padding: 12px 24px; font-weight: 800; font-size: 16px; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,0.3); letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.15);">
+    📢 Wulkanizacja Michał - rezerwacja terminu 600223669
+  </div>
+
+  <!-- Pasek legendy usług i godzin pracy -->
+  <div class="legend-bar">
+    <div class="legend-items">
+      <span style="font-weight: 600; color: #fff;">Etykiety usług:</span>
+      <div class="legend-item"><span class="legend-pill" style="background: var(--color-stal);"></span> Stal (45m)</div>
+      <div class="legend-item"><span class="legend-pill" style="background: var(--color-alu);"></span> Alu &le; 17" (45m)</div>
+      <div class="legend-item"><span class="legend-pill" style="background: var(--color-alupremium);"></span> AluPremium &gt; 17" (1h)</div>
+      <div class="legend-item"><span class="legend-pill" style="background: var(--color-bus);"></span> Bus (1h)</div>
+      <div class="legend-item"><span class="legend-pill" style="background: var(--color-szybki);"></span> Szybki (30m)</div>
+    </div>
+
+    <div class="hours-info-pill" id="working-hours-pill">
+      Godziny pracy: 08:00 - 18:00 (Stanowiska 1 i 2)
+    </div>
+  </div>
+
+  <!-- Główny terminarz w widoku tygodniowym (Google Calendar style) -->
+  <div class="calendar-container" id="week-view-container">
+    <div class="calendar-grid">
+      <!-- Wiersz nagłówków dni tygodnia (Pon - Sob) -->
+      <div class="grid-header-row">
+        <div class="header-time-cell"></div>
+        <div class="day-header-cell clickable" id="head-day-0" title="Kliknij, aby skupić widok na tym dniu"><div class="day-name">Pon</div><div class="day-num">-</div><div class="day-zoom-pill">🔍 fokus</div></div>
+        <div class="day-header-cell clickable" id="head-day-1" title="Kliknij, aby skupić widok na tym dniu"><div class="day-name">Wt</div><div class="day-num">-</div><div class="day-zoom-pill">🔍 fokus</div></div>
+        <div class="day-header-cell clickable" id="head-day-2" title="Kliknij, aby skupić widok na tym dniu"><div class="day-name">Śr</div><div class="day-num">-</div><div class="day-zoom-pill">🔍 fokus</div></div>
+        <div class="day-header-cell clickable" id="head-day-3" title="Kliknij, aby skupić widok na tym dniu"><div class="day-name">Czw</div><div class="day-num">-</div><div class="day-zoom-pill">🔍 fokus</div></div>
+        <div class="day-header-cell clickable" id="head-day-4" title="Kliknij, aby skupić widok na tym dniu"><div class="day-name">Pt</div><div class="day-num">-</div><div class="day-zoom-pill">🔍 fokus</div></div>
+        <div class="day-header-cell clickable" id="head-day-5" title="Kliknij, aby skupić widok na tym dniu"><div class="day-name">Sob</div><div class="day-num">-</div><div class="day-zoom-pill">🔍 fokus</div></div>
+      </div>
+
+      <!-- Ciało siatki czasowej -->
+      <div class="grid-body" id="grid-body">
+        <!-- Kolumna godzin (Time Gutter) -->
+        <div class="time-gutter" id="time-gutter">
+          <!-- Wypełniane dynamicznie -->
+        </div>
+
+        <!-- 6 kolumn dni (Pon - Sob) -->
+        <div class="day-column clickable-col" id="col-day-0"></div>
+        <div class="day-column clickable-col" id="col-day-1"></div>
+        <div class="day-column clickable-col" id="col-day-2"></div>
+        <div class="day-column clickable-col" id="col-day-3"></div>
+        <div class="day-column clickable-col" id="col-day-4"></div>
+        <div class="day-column clickable-col" id="col-day-5"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widok pojedynczego dnia (Fokus na 1 dzień - Podnośnik A / Podnośnik B) -->
+  <div class="calendar-container" id="day-view-container" style="display: none;">
+    <div class="day-focus-bar">
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <button class="btn btn-back-week" onclick="switchToWeekView()">
+          &larr; Powrót do widoku tygodnia
+        </button>
+        <div class="day-focus-date-title" id="day-focus-date-title">
+          Środa, 11 listopada 2026
+        </div>
+      </div>
+      <div class="day-focus-status-badge" id="day-focus-status-badge">
+        Stanowisko 1 (Podnośnik A) &amp; Stanowisko 2 (Podnośnik B)
+      </div>
+    </div>
+
+    <div class="calendar-grid">
+      <div class="grid-header-row day-focus-header-row">
+        <div class="header-time-cell" style="display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-muted); font-weight: 700;">
+          GODZ.
+        </div>
+        <div class="day-header-cell station-header-cell">
+          <div class="station-title">🚗 Stanowisko 1 (Podnośnik A)</div>
+          <div class="station-subtitle" id="day-st1-count">Ładowanie...</div>
+        </div>
+        <div class="day-header-cell station-header-cell">
+          <div class="station-title">🚙 Stanowisko 2 (Podnośnik B)</div>
+          <div class="station-subtitle" id="day-st2-count">Ładowanie...</div>
+        </div>
+      </div>
+
+      <div class="grid-body day-focus-grid-body" id="day-focus-grid-body">
+        <div class="time-gutter" id="day-time-gutter"></div>
+        <div class="day-column" id="day-col-st1"></div>
+        <div class="day-column" id="day-col-st2"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="cal-footer">
+    <p>Chcesz umówić termin wymiany lub serwisu opon? <strong id="cal-footer-phone">Zadzwoń do warsztatu: <a href="tel:600223669" style="color: var(--color-primary); text-decoration: none;">☎ 600 223 669</a></strong></p>
+    <p style="margin-top: 4px; font-size: 12px; color: var(--text-muted);">
+      Widok publiczny prezentuje wyłącznie zajętość stanowisk i typ usługi, bez danych osobowych klientów.
+    </p>
+  </footer>
+
+  <!-- Modal Logowania do Panelu Warsztatu (E-mail + Hasło) -->
+  <div id="login-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🔐 Logowanie do Panelu Warsztatu</h3>
+        <button class="modal-close-btn" id="btn-close-login" aria-label="Zamknij">&times;</button>
+      </div>
+      <form id="login-form" onsubmit="return handleLoginSubmit(event)">
+        <div class="modal-body">
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+            Dostęp zastrzeżony dla pracowników warsztatu. Podaj służbowy adres e-mail uprawniony w konfiguracji oraz hasło dostępowe.
+          </p>
+
+          <div class="form-group">
+            <label for="login-email">Adres E-mail pracownika:</label>
+            <input type="email" id="login-email" class="form-input" placeholder="np. michal@twoje4kola.pl" autocomplete="username" required autofocus />
+            <div id="login-email-error" class="error-msg">⚠️ Adres e-mail nie posiada uprawnień dostępu.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="login-password">Hasło dostępowe:</label>
+            <input type="password" id="login-password" class="form-input" placeholder="Wpisz hasło dostępowe..." autocomplete="current-password" required />
+            <div id="login-pwd-error" class="error-msg">⚠️ Nieprawidłowe hasło dostępowe.</div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); margin-top: 10px;">
+            <input type="checkbox" id="login-remember-me" style="cursor: pointer; width: 16px; height: 16px;" checked />
+            <label for="login-remember-me" style="cursor: pointer; margin-bottom: 0;">Zapamiętaj sesję w tej przeglądarce</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn" id="btn-cancel-login">Anuluj</button>
+          <button type="submit" id="btn-submit-login" class="btn" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-weight: 700; border: 1px solid #38bdf8; padding: 8px 18px; border-radius: 6px;">
+            Zaloguj się &rarr;
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_CONFIG = {
+      adminPassword: "admin",
+      allowedEmails: [
+        "michal@twoje4kola.pl",
+        "alert@itover.pl"
+      ],
+      stationsCount: 2,
+      slotDurationMinutes: 15,
+      services: [
+        { id: "steel_4", shortLabel: "Stal", name: "Stal - 4 koła stalowe", durationMinutes: 45, price: 120 },
+        { id: "alu_small", shortLabel: "Alu", name: "Alu - koła aluminiowe <= 17 cali", durationMinutes: 45, price: 140 },
+        { id: "alu_premium", shortLabel: "AluPremium", name: "AluPremium - koła aluminiowe > 17 cali", durationMinutes: 60, price: 180 },
+        { id: "bus", shortLabel: "Bus", name: "Bus - samochód dostawczy", durationMinutes: 60, price: 200 },
+        { id: "quick", shortLabel: "Szybki", name: "Szybki serwis / wyważenie", durationMinutes: 30, price: 60 }
+      ],
+      monthlyWorkingHours: {
+        "1": { start: "08:00", end: "18:00", saturdayStart: "08:00", saturdayEnd: "14:00", workSaturday: true },
+        "2": { start: "08:00", end: "18:00", saturdayStart: "08:00", saturdayEnd: "14:00", workSaturday: true },
+        "3": { start: "08:00", end: "18:00", saturdayStart: "08:00", saturdayEnd: "14:00", workSaturday: true },
+        "4": { start: "08:00", end: "20:00", saturdayStart: "08:00", saturdayEnd: "16:00", workSaturday: true, note: "Sezon wiosenny" },
+        "5": { start: "08:00", end: "18:00", saturdayStart: "08:00", saturdayEnd: "14:00", workSaturday: true },
+        "6": { start: "08:00", end: "18:00", saturdayStart: "08:00", saturdayEnd: "14:00", workSaturday: true },
+        "7": { start: "08:00", end: "18:00", saturdayStart: "08:00", saturdayEnd: "14:00", workSaturday: true },
+        "8": { start: "08:00", end: "18:00", saturdayStart: "08:00", saturdayEnd: "14:00", workSaturday: true },
+        "9": { start: "08:00", end: "18:00", saturdayStart: "08:00", saturdayEnd: "14:00", workSaturday: true },
+        "10": { start: "08:00", end: "18:00", saturdayStart: "08:00", saturdayEnd: "14:00", workSaturday: true },
+        "11": { start: "08:00", end: "20:00", saturdayStart: "08:00", saturdayEnd: "16:00", workSaturday: true, note: "Sezon zimowy" },
+        "12": { start: "08:00", end: "18:00", saturdayStart: "08:00", saturdayEnd: "14:00", workSaturday: true }
+      }
+    };
+
+    let calendarConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    let currentWeekStart = getMonday(new Date());
+    let currentViewMode = 'week'; // 'week' lub 'day'
+    let currentFocusDate = formatDateIso(new Date());
+
+    function getMonday(d) {
+      const date = new Date(d);
+      const day = date.getDay();
+      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+      const mon = new Date(date.setDate(diff));
+      mon.setHours(0,0,0,0);
+      return mon;
+    }
+
+    function formatDateIso(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function formatPolishDateFull(dateIso) {
+      const [y, m, d] = dateIso.split('-').map(Number);
+      const dObj = new Date(y, m - 1, d);
+      const dayNames = ["Niedziela", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota"];
+      const dayName = dayNames[dObj.getDay()];
+      return `${dayName}, ${d} ${MONTHS_PL[m - 1]} ${y}`;
+    }
+
+    function isPolishHoliday(dateStr) {
+      const [yStr, mStr, dStr] = dateStr.split('-');
+      const year = parseInt(yStr, 10);
+      const month = parseInt(mStr, 10);
+      const day = parseInt(dStr, 10);
+      const md = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const fixed = ["01-01", "01-06", "05-01", "05-03", "08-15", "11-01", "11-11", "12-25", "12-26"];
+      if (fixed.includes(md)) return true;
+
+      const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+      const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+      const g = Math.floor((b - f + 1) / 3);
+      const h = (19 * a + b - d - g + 15) % 30;
+      const i = Math.floor(c / 4), k = c % 4;
+      const l = (32 + 2 * e + 2 * i - h - k) % 7;
+      const m = Math.floor((a + 11 * h + 22 * l) / 451);
+      const eMonth = Math.floor((h + l - 7 * m + 114) / 31);
+      const eDay = ((h + l - 7 * m + 114) % 31) + 1;
+      const easter = new Date(Date.UTC(year, eMonth - 1, eDay));
+
+      const addDays = (base, days) => {
+        const res = new Date(base.getTime());
+        res.setUTCDate(res.getUTCDate() + days);
+        return `${String(res.getUTCMonth() + 1).padStart(2, '0')}-${String(res.getUTCDate()).padStart(2, '0')}`;
+      };
+
+      if (md === addDays(easter, 1) || md === addDays(easter, 60) || md === addDays(easter, 49)) return true;
+      return false;
+    }
+
+    function getWorkingHours(dateStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dObj = new Date(y, m - 1, d);
+      const dow = dObj.getDay();
+      if (dow === 0) return null;
+      if (isPolishHoliday(dateStr)) return null;
+
+      const mCfg = (calendarConfig.monthlyWorkingHours && calendarConfig.monthlyWorkingHours[String(m)])
+        ? calendarConfig.monthlyWorkingHours[String(m)]
+        : { start: "08:00", end: "18:00", saturdayStart: "08:00", saturdayEnd: "14:00", workSaturday: true };
+
+      if (dow === 6) {
+        if (!mCfg.workSaturday) return null;
+        return { start: mCfg.saturdayStart || "08:00", end: mCfg.saturdayEnd || "14:00" };
+      }
+      return { start: mCfg.start || "08:00", end: mCfg.end || "18:00" };
+    }
+
+    const MONTHS_PL = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca", "sierpnia", "września", "października", "listopada", "grudnia"];
+    const DAYS_PL = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota"];
+
+    // Przełączanie w tryb widoku pojedynczego dnia (Fokus na 1 dzień)
+    function switchToDayView(dateIso) {
+      currentViewMode = 'day';
+      currentFocusDate = dateIso || currentFocusDate || formatDateIso(new Date());
+
+      const [y, m, d] = currentFocusDate.split('-').map(Number);
+      currentWeekStart = getMonday(new Date(y, m - 1, d));
+
+      document.getElementById('week-view-container').style.display = 'none';
+      document.getElementById('day-view-container').style.display = 'flex';
+
+      document.getElementById('btn-mode-week').classList.remove('active');
+      document.getElementById('btn-mode-day').classList.add('active');
+      document.getElementById('btn-back-to-week').style.display = 'inline-flex';
+
+      document.getElementById('btn-prev-period').textContent = '← Poprzedni';
+      document.getElementById('btn-this-period').textContent = 'Dziś';
+      document.getElementById('btn-next-period').textContent = 'Następny →';
+
+      renderDayFocusView(currentFocusDate);
+    }
+
+    // Przełączanie powrotne w tryb widoku całego tygodnia
+    function switchToWeekView() {
+      currentViewMode = 'week';
+
+      document.getElementById('day-view-container').style.display = 'none';
+      document.getElementById('week-view-container').style.display = 'flex';
+
+      document.getElementById('btn-mode-day').classList.remove('active');
+      document.getElementById('btn-mode-week').classList.add('active');
+      document.getElementById('btn-back-to-week').style.display = 'none';
+
+      document.getElementById('btn-prev-period').textContent = '← Poprzedni';
+      document.getElementById('btn-this-period').textContent = 'Dziś';
+      document.getElementById('btn-next-period').textContent = 'Następny →';
+
+      loadWeekView();
+    }
+
+    // Pobranie wizyt (API + localStorage)
+    async function fetchAppointmentsRange(fromDate, toDate) {
+      let appointments = [];
+      try {
+        const res = await fetch(`/api/calendar/public?dateFrom=${fromDate}&dateTo=${toDate}`);
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && ct.includes('application/json')) {
+          const data = await res.json();
+          appointments = data.appointments || [];
+        }
+      } catch (e) {}
+
+      try {
+        const local = localStorage.getItem('tire_calendar_appointments');
+        if (local) {
+          const all = JSON.parse(local);
+          const localFiltered = all.filter(a => a.date >= fromDate && a.date <= toDate && a.status !== 'cancelled').map(a => ({
+            id: a.id,
+            date: a.date,
+            startTime: a.startTime,
+            endTime: a.endTime,
+            durationMinutes: a.durationMinutes,
+            station: a.station,
+            serviceId: a.serviceId,
+            serviceName: a.serviceName
+          }));
+
+          const existingIds = new Set(appointments.map(a => a.id));
+          localFiltered.forEach(la => {
+            if (!existingIds.has(la.id)) {
+              appointments.push(la);
+            }
+          });
+        }
+      } catch(e) {}
+
+      return appointments;
+    }
+
+    // =========================================================================
+    // 1. WIDOK CAŁEGO TYGODNIA (6 DNI)
+    // =========================================================================
+    async function loadWeekView() {
+      // Wyznaczamy dni od poniedziałku do soboty (6 dni)
+      const days = [];
+      for (let i = 0; i < 6; i++) {
+        const d = new Date(currentWeekStart);
+        d.setDate(d.getDate() + i);
+        days.push(d);
+      }
+
+      const monStr = days[0];
+      const satStr = days[5];
+      const rangeLabel = `${monStr.getDate()} – ${satStr.getDate()} ${MONTHS_PL[satStr.getMonth()]} ${satStr.getFullYear()}`;
+      document.getElementById('week-range-label').textContent = rangeLabel;
+
+      const fromDate = formatDateIso(days[0]);
+      const toDate = formatDateIso(days[5]);
+      const weekAppointments = await fetchAppointmentsRange(fromDate, toDate);
+
+      // Godziny pracy dla bieżącego miesiąca
+      const curMonth = String(monStr.getMonth() + 1);
+      const monthHours = (calendarConfig.monthlyWorkingHours && calendarConfig.monthlyWorkingHours[curMonth])
+        ? calendarConfig.monthlyWorkingHours[curMonth]
+        : { start: "08:00", end: "18:00", note: "" };
+
+      let startH = parseInt((monthHours.start || "08:00").split(':')[0], 10);
+      let endH = Math.ceil(parseInt((monthHours.end || "18:00").split(':')[0], 10) + (parseInt((monthHours.end || "18:00").split(':')[1] || '0', 10) > 0 ? 1 : 0));
+
+      // Jeśli są wizyty wykraczające poza standardowe godziny, dostosuj siatkę
+      weekAppointments.forEach(app => {
+        if (app.startTime) {
+          const [sh] = app.startTime.split(':').map(Number);
+          if (sh < startH) startH = sh;
+        }
+        if (app.endTime) {
+          const [eh, em] = app.endTime.split(':').map(Number);
+          const ceilH = em > 0 ? eh + 1 : eh;
+          if (ceilH > endH) endH = ceilH;
+        }
+      });
+      const totalHours = Math.max(1, endH - startH);
+
+      const hoursPill = document.getElementById('working-hours-pill');
+      const noteStr = monthHours.note ? ` (${monthHours.note})` : '';
+      hoursPill.textContent = `Godziny w tym miesiącu: ${monthHours.start} - ${monthHours.end}${noteStr} | Obsługa 2 aut jednocześnie (kliknij dzień, aby powiększyć)`;
+
+      // Renderujemy kolumnę godzin (Time Gutter)
+      const timeGutter = document.getElementById('time-gutter');
+      let gutterHtml = '';
+      for (let h = startH; h < endH; h++) {
+        const hStr = `${String(h).padStart(2, '0')}:00`;
+        gutterHtml += `<div class="time-slot-label">${hStr}</div>`;
+      }
+      timeGutter.innerHTML = gutterHtml;
+
+      const todayIso = formatDateIso(new Date());
+
+      // Renderujemy nagłówki i kolumny dla każdego z 6 dni
+      days.forEach((dayDate, i) => {
+        const dIso = formatDateIso(dayDate);
+        const headCell = document.getElementById(`head-day-${i}`);
+        const colCell = document.getElementById(`col-day-${i}`);
+
+        // Kliknięcie w nagłówek otwiera fokus na ten dzień
+        headCell.onclick = () => switchToDayView(dIso);
+        colCell.onclick = (e) => {
+          switchToDayView(dIso);
+        };
+
+        // Nagłówek dnia
+        headCell.querySelector('.day-num').textContent = dayDate.getDate();
+        if (dIso === todayIso) {
+          headCell.classList.add('today');
+        } else {
+          headCell.classList.remove('today');
+        }
+
+        // Tło siatki (poziome linie co godzinę)
+        let colHtml = '';
+        for (let h = startH; h < endH; h++) {
+          colHtml += `<div class="hour-line"></div>`;
+        }
+
+        const workH = getWorkingHours(dIso);
+        const dayApps = weekAppointments
+          .filter(a => a.date === dIso)
+          .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+
+        if (!workH) {
+          // Dzień wolny / święto
+          const isHol = isPolishHoliday(dIso);
+          if (dayApps.length === 0) {
+            colHtml += `<div class="day-closed-overlay">${isHol ? 'Święto państwowe' : 'Nieczynne'}</div>`;
+          } else {
+            // Są zaplanowane wizyty w ten dzień (np. dyżur w święto)
+            colHtml += `
+              <div class="day-closed-bg-stripes"></div>
+              <div class="day-closed-sub-badge">${isHol ? 'Święto (dyżur)' : 'Poza godzinami'}</div>
+            `;
+          }
+        } else {
+          // Jeśli sobota kończy się wcześniej, wyszarzamy resztę dnia
+          const [dayEndH, dayEndM] = workH.end.split(':').map(Number);
+          if (dayEndH < endH) {
+            const closedTop = ((dayEndH * 60 + dayEndM - startH * 60) / (totalHours * 60)) * 100;
+            colHtml += `<div style="position: absolute; top: ${closedTop}%; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.7); border-top: 1px dashed var(--border-color); z-index: 5; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-muted); pointer-events: none;">Zamknięte od ${workH.end}</div>`;
+          }
+        }
+
+        // Renderujemy wizyty w tym dniu ZAWSZE (jeśli istnieją)
+        dayApps.forEach(app => {
+          const [ash, asm] = app.startTime.split(':').map(Number);
+          const appStartMins = ash * 60 + asm;
+          const startDayMins = startH * 60;
+          const totalGridMins = totalHours * 60;
+
+          const topPercent = Math.max(0, ((appStartMins - startDayMins) / totalGridMins) * 100);
+          const heightPercent = Math.max(2, (app.durationMinutes / totalGridMins) * 100);
+
+          let srvLabel = "Wymiana";
+          let srvTypeClass = "type-stal";
+
+          const sid = (app.serviceId || "").toLowerCase();
+          const sname = (app.serviceName || "").toLowerCase();
+
+          if (sid.includes('steel') || sname.includes('stal')) {
+            srvLabel = "Stal";
+            srvTypeClass = "type-stal";
+          } else if (sid.includes('premium') || sname.includes('premium')) {
+            srvLabel = "AluPremium";
+            srvTypeClass = "type-alupremium";
+          } else if (sid.includes('alu') || sname.includes('alu')) {
+            srvLabel = "Alu";
+            srvTypeClass = "type-alu";
+          } else if (sid.includes('bus') || sname.includes('bus')) {
+            srvLabel = "Bus";
+            srvTypeClass = "type-bus";
+          } else if (sid.includes('quick') || sname.includes('szybki')) {
+            srvLabel = "Szybki";
+            srvTypeClass = "type-szybki";
+          }
+
+          const stationClass = app.station === 2 ? 'event-st-2' : 'event-st-1';
+
+          colHtml += `
+            <div class="event-block ${srvTypeClass} ${stationClass}" style="top: ${topPercent}%; height: ${heightPercent}%;">
+              <div class="event-badge">${srvLabel}</div>
+              <div class="event-time">${app.startTime} - ${app.endTime}</div>
+            </div>
+          `;
+        });
+
+        colCell.innerHTML = colHtml;
+      });
+    }
+
+    // =========================================================================
+    // 2. WIDOK POJEDYNCZEGO DNIA (FOKUS NA 1 DZIEŃ - 2 ODDZIELNE STANOWISKA)
+    // =========================================================================
+    async function renderDayFocusView(dateIso) {
+      const dayTitle = formatPolishDateFull(dateIso);
+      document.getElementById('week-range-label').textContent = dayTitle;
+      document.getElementById('day-focus-date-title').innerHTML = `📅 ${dayTitle}`;
+
+      const workH = getWorkingHours(dateIso);
+      const isHol = isPolishHoliday(dateIso);
+      const [y, m, d] = dateIso.split('-').map(Number);
+      const isSun = new Date(y, m - 1, d).getDay() === 0;
+
+      const badgeEl = document.getElementById('day-focus-status-badge');
+      if (!workH) {
+        if (isHol) {
+          badgeEl.textContent = "🚩 Święto państwowe (dyżur / terminy umówione)";
+          badgeEl.style.color = "#f59e0b";
+          badgeEl.style.borderColor = "rgba(245, 158, 11, 0.4)";
+        } else if (isSun) {
+          badgeEl.textContent = "🛌 Niedziela (nieczynne)";
+          badgeEl.style.color = "#ef4444";
+          badgeEl.style.borderColor = "rgba(239, 68, 68, 0.4)";
+        } else {
+          badgeEl.textContent = "Zamknięte";
+          badgeEl.style.color = "#94a3b8";
+        }
+      } else {
+        badgeEl.textContent = `🕒 Godziny pracy: ${workH.start} - ${workH.end} | Stanowisko 1 (Podnośnik A) & Stanowisko 2 (Podnośnik B)`;
+        badgeEl.style.color = "#38bdf8";
+        badgeEl.style.borderColor = "rgba(56, 189, 248, 0.25)";
+      }
+
+      // Pobieramy wizyty na ten 1 dzień
+      const dayApps = await fetchAppointmentsRange(dateIso, dateIso);
+      dayApps.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+
+      // Godziny startu i końca siatki
+      const curMonth = String(m);
+      const monthHours = (calendarConfig.monthlyWorkingHours && calendarConfig.monthlyWorkingHours[curMonth])
+        ? calendarConfig.monthlyWorkingHours[curMonth]
+        : { start: "08:00", end: "18:00" };
+
+      let startH = parseInt((monthHours.start || "08:00").split(':')[0], 10);
+      let endH = Math.ceil(parseInt((monthHours.end || "18:00").split(':')[0], 10) + (parseInt((monthHours.end || "18:00").split(':')[1] || '0', 10) > 0 ? 1 : 0));
+
+      dayApps.forEach(app => {
+        if (app.startTime) {
+          const [sh] = app.startTime.split(':').map(Number);
+          if (sh < startH) startH = sh;
+        }
+        if (app.endTime) {
+          const [eh, em] = app.endTime.split(':').map(Number);
+          const ceilH = em > 0 ? eh + 1 : eh;
+          if (ceilH > endH) endH = ceilH;
+        }
+      });
+      const totalHours = Math.max(1, endH - startH);
+
+      // Renderujemy Time Gutter
+      const timeGutter = document.getElementById('day-time-gutter');
+      let gutterHtml = '';
+      for (let h = startH; h < endH; h++) {
+        const hStr = `${String(h).padStart(2, '0')}:00`;
+        gutterHtml += `<div class="time-slot-label">${hStr}</div>`;
+      }
+      timeGutter.innerHTML = gutterHtml;
+
+      // Rozdzielamy wizyty na 2 stanowiska
+      const st1Apps = dayApps.filter(a => a.station === 1);
+      const st2Apps = dayApps.filter(a => a.station === 2);
+
+      document.getElementById('day-st1-count').innerHTML = st1Apps.length > 0 
+        ? `<span class="count-pill occupied">● ${st1Apps.length} zaplanowane wizyty</span>` 
+        : `<span class="count-pill free">✓ Wolne terminy</span>`;
+      document.getElementById('day-st2-count').innerHTML = st2Apps.length > 0 
+        ? `<span class="count-pill occupied">● ${st2Apps.length} zaplanowane wizyty</span>` 
+        : `<span class="count-pill free">✓ Wolne terminy</span>`;
+
+      function renderStationCol(apps, colEl, stationNum) {
+        let html = '';
+        for (let h = startH; h < endH; h++) {
+          html += `<div class="hour-line"></div>`;
+        }
+
+        if (!workH) {
+          if (apps.length === 0) {
+            html += `<div class="day-closed-overlay">${isHol ? 'Święto państwowe' : 'Nieczynne'}</div>`;
+          } else {
+            html += `
+              <div class="day-closed-bg-stripes"></div>
+              <div class="day-closed-sub-badge">${isHol ? 'Święto (dyżur)' : 'Poza godzinami'}</div>
+            `;
+          }
+        } else {
+          const [dayEndH, dayEndM] = workH.end.split(':').map(Number);
+          if (dayEndH < endH) {
+            const closedTop = ((dayEndH * 60 + dayEndM - startH * 60) / (totalHours * 60)) * 100;
+            html += `<div style="position: absolute; top: ${closedTop}%; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.7); border-top: 1px dashed var(--border-color); z-index: 5; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); pointer-events: none;">Zamknięte od ${workH.end}</div>`;
+          }
+        }
+
+        apps.forEach(app => {
+          const [ash, asm] = app.startTime.split(':').map(Number);
+          const appStartMins = ash * 60 + asm;
+          const startDayMins = startH * 60;
+          const totalGridMins = totalHours * 60;
+
+          const topPercent = Math.max(0, ((appStartMins - startDayMins) / totalGridMins) * 100);
+          const heightPercent = Math.max(3.8, (app.durationMinutes / totalGridMins) * 100);
+
+          let srvLabel = "Wymiana opon";
+          let srvTypeClass = "type-stal";
+
+          const sid = (app.serviceId || "").toLowerCase();
+          const sname = (app.serviceName || "").toLowerCase();
+
+          if (sid.includes('steel') || sname.includes('stal')) {
+            srvLabel = "Koła Stalowe";
+            srvTypeClass = "type-stal";
+          } else if (sid.includes('premium') || sname.includes('premium')) {
+            srvLabel = "AluPremium (> 17\")";
+            srvTypeClass = "type-alupremium";
+          } else if (sid.includes('alu') || sname.includes('alu')) {
+            srvLabel = "Koła Alu (≤ 17\")";
+            srvTypeClass = "type-alu";
+          } else if (sid.includes('bus') || sname.includes('bus')) {
+            srvLabel = "Bus / Dostawczy";
+            srvTypeClass = "type-bus";
+          } else if (sid.includes('quick') || sname.includes('szybki')) {
+            srvLabel = "Szybki serwis / Wyważenie";
+            srvTypeClass = "type-szybki";
+          }
+
+          html += `
+            <div class="event-block event-focus-day ${srvTypeClass}" style="top: ${topPercent}%; height: ${heightPercent}%;">
+              <div class="event-badge">${srvLabel}</div>
+              <div class="event-time">⏱️ ${app.startTime} – ${app.endTime} (${app.durationMinutes} min)</div>
+            </div>
+          `;
+        });
+
+        colEl.innerHTML = html;
+      }
+
+      renderStationCol(st1Apps, document.getElementById('day-col-st1'), 1);
+      renderStationCol(st2Apps, document.getElementById('day-col-st2'), 2);
+    }
+
+    function shiftFocusDay(delta) {
+      const [y, m, d] = currentFocusDate.split('-').map(Number);
+      const cur = new Date(y, m - 1, d);
+      cur.setDate(cur.getDate() + delta);
+      if (cur.getDay() === 0) {
+        cur.setDate(cur.getDate() + (delta >= 0 ? 1 : -1));
+      }
+      currentFocusDate = formatDateIso(cur);
+      currentWeekStart = getMonday(cur);
+      renderDayFocusView(currentFocusDate);
+    }
+
+    // =========================================================================
+    // 3. NAWIGACJA I PRZEŁĄCZNIKI WIDOKÓW
+    // =========================================================================
+    document.getElementById('btn-prev-period').addEventListener('click', () => {
+      if (currentViewMode === 'week') {
+        currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+        loadWeekView();
+      } else {
+        shiftFocusDay(-1);
+      }
+    });
+
+    document.getElementById('btn-next-period').addEventListener('click', () => {
+      if (currentViewMode === 'week') {
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+        loadWeekView();
+      } else {
+        shiftFocusDay(1);
+      }
+    });
+
+    document.getElementById('btn-this-period').addEventListener('click', () => {
+      const now = new Date();
+      currentWeekStart = getMonday(now);
+      currentFocusDate = formatDateIso(now);
+      if (currentViewMode === 'week') {
+        loadWeekView();
+      } else {
+        renderDayFocusView(currentFocusDate);
+      }
+    });
+
+    document.getElementById('btn-mode-week').addEventListener('click', () => {
+      switchToWeekView();
+    });
+
+    document.getElementById('btn-mode-day').addEventListener('click', () => {
+      switchToDayView(currentFocusDate);
+    });
+
+    function updateHeader() {
+      const text = calendarConfig.publicHeader || "Wulkanizacja Michał - rezerwacja terminu 600223669";
+      const banner = document.getElementById('public-banner-announcement');
+      if (banner) banner.textContent = `📢 ${text}`;
+      document.title = text;
+
+      // Dynamiczna aktualizacja numeru telefonu w stopce na podstawie nagłówka
+      const footerPhoneEl = document.getElementById('cal-footer-phone');
+      if (footerPhoneEl) {
+        const match = text.match(/(\+?\d[\d\s-]{6,}\d)/);
+        const rawPhone = match ? match[1].trim() : "600 223 669";
+        const cleanTel = rawPhone.replace(/\s+/g, '');
+        footerPhoneEl.innerHTML = `Zadzwoń do warsztatu: <a href="tel:${cleanTel}" style="color: var(--color-primary); text-decoration: none;">☎ ${rawPhone}</a>`;
+      }
+    }
+
+    // Pobranie konfiguracji kalendarza (zabezpieczenie przed cache przeglądarki)
+    async function loadCalendarConfigFresh() {
+      try {
+        const res = await fetch('/calendar_config.json', { cache: 'no-store' });
+        const ct = res.headers.get('content-type') || '';
+        if (res.ok && (ct.includes('application/json') || ct.includes('text/plain') || ct.includes('octet-stream'))) {
+          const cfg = await res.json();
+          if (cfg && (cfg.services || cfg.allowedEmails || cfg.adminPassword)) {
+            calendarConfig = { ...calendarConfig, ...cfg };
+            localStorage.setItem('tire_calendar_config', JSON.stringify(calendarConfig));
+            return calendarConfig;
+          }
+        }
+      } catch(e) {}
+
+      try {
+        const localCfg = localStorage.getItem('tire_calendar_config');
+        if (localCfg) {
+          const parsed = JSON.parse(localCfg);
+          if (parsed && (parsed.services || parsed.allowedEmails || parsed.adminPassword)) {
+            calendarConfig = { ...calendarConfig, ...parsed };
+          }
+        }
+      } catch(e) {}
+
+      return calendarConfig;
+    }
+
+    // Inicjalne załadowanie
+    async function init() {
+      await loadCalendarConfigFresh();
+      checkAuthStatus();
+      updateHeader();
+      loadWeekView();
+    }
+    init();
+
+    function checkAuthStatus() {
+      const isLogged = sessionStorage.getItem('tire_admin_logged') === 'true' || localStorage.getItem('tire_admin_logged') === 'true';
+      const userEmail = sessionStorage.getItem('tire_admin_email') || localStorage.getItem('tire_admin_email') || '';
+      const loginBtn = document.getElementById('btn-login-open');
+      if (!loginBtn) return;
+      if (isLogged) {
+        loginBtn.innerHTML = `🛠️ Panel Warsztatu ${userEmail ? `(${userEmail})` : '(Zalogowano)'}`;
+        loginBtn.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+        loginBtn.style.borderColor = '#34d399';
+        loginBtn.style.boxShadow = '0 2px 10px rgba(16, 185, 129, 0.35)';
+        loginBtn.onclick = () => {
+          window.location.href = '/index.html';
+        };
+      } else {
+        loginBtn.innerHTML = '🔐 Zaloguj';
+        loginBtn.style.background = 'linear-gradient(135deg, #0284c7, #2563eb)';
+        loginBtn.style.borderColor = '#38bdf8';
+        loginBtn.style.boxShadow = '0 2px 8px rgba(37,99,235,0.3)';
+        loginBtn.onclick = () => {
+          openLoginModal();
+        };
+      }
+    }
+
+    async function openLoginModal() {
+      await loadCalendarConfigFresh();
+      const modal = document.getElementById('login-modal');
+      const emailInput = document.getElementById('login-email');
+      const pwdInput = document.getElementById('login-password');
+      const emailErr = document.getElementById('login-email-error');
+      const pwdErr = document.getElementById('login-pwd-error');
+      if (modal) modal.style.display = 'flex';
+      if (emailErr) emailErr.style.display = 'none';
+      if (pwdErr) pwdErr.style.display = 'none';
+      if (emailInput) {
+        emailInput.value = localStorage.getItem('tire_admin_email') || 'michal@twoje4kola.pl';
+        setTimeout(() => {
+          if (emailInput.value && emailInput.value.trim() !== '') {
+            pwdInput?.focus();
+          } else {
+            emailInput.focus();
+          }
+        }, 60);
+      }
+    }
+
+    function closeLoginModal() {
+      const modal = document.getElementById('login-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    document.getElementById('btn-close-login')?.addEventListener('click', closeLoginModal);
+    document.getElementById('btn-cancel-login')?.addEventListener('click', closeLoginModal);
+
+    document.getElementById('login-modal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'login-modal') closeLoginModal();
+    });
+
+    // Główna funkcja logowania
+    async function handleLoginSubmit(e) {
+      if (e && e.preventDefault) e.preventDefault();
+
+      await loadCalendarConfigFresh();
+      const emailInput = document.getElementById('login-email');
+      const pwdInput = document.getElementById('login-password');
+      const remember = document.getElementById('login-remember-me')?.checked;
+      const emailErr = document.getElementById('login-email-error');
+      const pwdErr = document.getElementById('login-pwd-error');
+
+      if (emailErr) emailErr.style.display = 'none';
+      if (pwdErr) pwdErr.style.display = 'none';
+
+      const enteredEmail = emailInput ? emailInput.value.trim().toLowerCase() : '';
+      const enteredPwd = pwdInput ? pwdInput.value.trim() : '';
+
+      // Pobieramy listę dozwolonych adresów e-mail z konfiguracji
+      let allowed = (calendarConfig && calendarConfig.allowedEmails) ? calendarConfig.allowedEmails : [
+        "michal@twoje4kola.pl",
+        "alert@itover.pl"
+      ];
+      if (typeof allowed === 'string') {
+        allowed = allowed.split(/[\n,;]+/).map(x => x.trim().toLowerCase()).filter(Boolean);
+      } else if (Array.isArray(allowed)) {
+        allowed = allowed.map(x => String(x).trim().toLowerCase()).filter(Boolean);
+      }
+
+      // Weryfikacja e-maila (zezwalamy także na login awaryjny "admin")
+      const isAllowed = allowed.includes('*') || 
+                        allowed.includes(enteredEmail) || 
+                        enteredEmail === 'admin' ||
+                        enteredEmail === 'admin@warsztat.pl';
+
+      if (!isAllowed) {
+        if (emailErr) {
+          emailErr.innerHTML = `⚠️ Brak uprawnień: Adres "<strong>${enteredEmail}</strong>" nie znajduje się na liście pracowników.<br><span style="font-size:11px; opacity:0.85; margin-top:3px; display:block;">Dozwolone adresy z pliku JSON: ${allowed.join(', ')}</span>`;
+          emailErr.style.display = 'block';
+        }
+        if (emailInput) {
+          emailInput.focus();
+          emailInput.select();
+        }
+        return false;
+      }
+
+      // Weryfikacja hasła
+      const correctPwd = (calendarConfig && calendarConfig.adminPassword) ? calendarConfig.adminPassword : 'admin';
+      if (enteredPwd !== correctPwd) {
+        if (pwdErr) {
+          pwdErr.textContent = '⚠️ Nieprawidłowe hasło dostępowe. (Domyślne: admin)';
+          pwdErr.style.display = 'block';
+        }
+        if (pwdInput) {
+          pwdInput.focus();
+          pwdInput.select();
+        }
+        return false;
+      }
+
+      // Poprawne logowanie - zapisujemy flagę sesji
+      sessionStorage.setItem('tire_admin_logged', 'true');
+      sessionStorage.setItem('tire_admin_email', enteredEmail);
+      if (remember) {
+        localStorage.setItem('tire_admin_logged', 'true');
+        localStorage.setItem('tire_admin_email', enteredEmail);
+      }
+
+      // Przejście do panelu głównego
+      window.location.href = '/index.html';
+      return false;
+    }
+
+    document.getElementById('login-form')?.addEventListener('submit', handleLoginSubmit);
+  </script>
+</body>
+</html>

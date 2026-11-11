@@ -1,0 +1,72 @@
+{
+  "deposits": [
+    {
+      "id": "75175749-6570-4323-bd66-fbb86711f9b2",
+      "clientName": "Bartek",
+      "clientPhone": "883618180",
+      "carLicensePlate": "PRA51111",
+      "tireSize": "215/65/16",
+      "tireBrand": "Matador",
+      "tireSeason": "Całoroczne",
+      "tireRimType": "Brak",
+      "notes": "",
+      "location": "wiata",
+      "depositDate": "2026-06-19",
+      "price": 150,
+      "status": "active"
+    },
+    {
+      "id": "efe72d99-a1e8-4914-b34f-2b1769e2a1c7",
+      "clientName": "Banan",
+      "clientPhone": "502920202",
+      "clientEmail": "alert@itover.pl",
+      "carLicensePlate": "PRA41AA",
+      "tireSize": "170/70/17",
+      "tireBrand": "",
+      "tireSeason": "Letnie",
+      "tireRimType": "Brak",
+      "notes": "",
+      "location": "wiata",
+      "depositDate": "2026-06-25",
+      "quantity": 1,
+      "price": 50,
+      "status": "active"
+    },
+    {
+      "id": "0000001",
+      "clientName": "kamil Ogrodowski",
+      "clientPhone": "500123456",
+      "clientEmail": "k.ogrodowski@gmail.com",
+      "carLicensePlate": "WE1234P",
+      "tireSize": "175/70/13",
+      "tireBrand": "Matador",
+      "tireSeason": "Zimowe",
+      "tireRimType": "Stalowe",
+      "notes": "",
+      "location": "Tgóra",
+      "depositDate": "2026-06-29",
+      "quantity": 2,
+      "price": 80,
+      "status": "active"
+    }
+  ],
+  "archive": [
+    {
+      "id": "74fa46e4-f4d1-4c29-9745-82d54ac6d3c7",
+      "clientName": "Bogna",
+      "clientPhone": "608417207",
+      "carLicensePlate": "PRAS715",
+      "tireSize": "195/65/17",
+      "tireBrand": "MIchelin",
+      "tireSeason": "Zimowe",
+      "tireRimType": "Brak",
+      "notes": "",
+      "location": "wiata",
+      "depositDate": "2026-06-19",
+      "price": 13,
+      "status": "released",
+      "releaseDate": "2026-06-19",
+      "daysStored": 0
+    }
+  ]
+}

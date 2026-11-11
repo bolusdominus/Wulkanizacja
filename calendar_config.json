@@ -1,0 +1,62 @@
+{
+  "adminPassword": "admin",
+  "allowedEmails": [
+    "michal@twoje4kola.pl",
+    "alert@itover.pl"
+  ],
+  "publicHeader": "Wulkanizacja Michał - rezerwacja terminu 600223669",
+  "stationsCount": 2,
+  "slotDurationMinutes": 15,
+  "services": [
+    {
+      "id": "steel_4",
+      "shortLabel": "Stal",
+      "name": "Stal - 4 koła stalowe (osobowe)",
+      "durationMinutes": 45,
+      "price": 120
+    },
+    {
+      "id": "alu_small",
+      "shortLabel": "Alu",
+      "name": "Alu - koła aluminiowe <= 17 cali",
+      "durationMinutes": 45,
+      "price": 140
+    },
+    {
+      "id": "alu_premium",
+      "shortLabel": "AluPremium",
+      "name": "AluPremium - koła aluminiowe > 17 cali",
+      "durationMinutes": 60,
+      "price": 180
+    },
+    {
+      "id": "bus",
+      "shortLabel": "Bus",
+      "name": "Bus - samochód dostawczy",
+      "durationMinutes": 60,
+      "price": 200
+    },
+    {
+      "id": "quick",
+      "shortLabel": "Szybki",
+      "name": "Szybki serwis / wyważenie / 2 koła",
+      "durationMinutes": 30,
+      "price": 60
+    }
+  ],
+  "monthlyWorkingHours": {
+    "1": { "start": "08:00", "end": "18:00", "saturdayStart": "08:00", "saturdayEnd": "14:00", "workSaturday": true },
+    "2": { "start": "08:00", "end": "18:00", "saturdayStart": "08:00", "saturdayEnd": "14:00", "workSaturday": true },
+    "3": { "start": "08:00", "end": "18:00", "saturdayStart": "08:00", "saturdayEnd": "14:00", "workSaturday": true },
+    "4": { "start": "08:00", "end": "20:00", "saturdayStart": "08:00", "saturdayEnd": "16:00", "workSaturday": true, "note": "Sezon wiosenny (kwiecień)" },
+    "5": { "start": "08:00", "end": "18:00", "saturdayStart": "08:00", "saturdayEnd": "14:00", "workSaturday": true },
+    "6": { "start": "08:00", "end": "18:00", "saturdayStart": "08:00", "saturdayEnd": "14:00", "workSaturday": true },
+    "7": { "start": "08:00", "end": "18:00", "saturdayStart": "08:00", "saturdayEnd": "14:00", "workSaturday": true },
+    "8": { "start": "08:00", "end": "18:00", "saturdayStart": "08:00", "saturdayEnd": "14:00", "workSaturday": true },
+    "9": { "start": "08:00", "end": "18:00", "saturdayStart": "08:00", "saturdayEnd": "14:00", "workSaturday": true },
+    "10": { "start": "08:00", "end": "18:00", "saturdayStart": "08:00", "saturdayEnd": "14:00", "workSaturday": true },
+    "11": { "start": "08:00", "end": "20:00", "saturdayStart": "08:00", "saturdayEnd": "16:00", "workSaturday": true, "note": "Sezon zimowy (listopad)" },
+    "12": { "start": "08:00", "end": "18:00", "saturdayStart": "08:00", "saturdayEnd": "14:00", "workSaturday": true }
+  },
+  "customHolidays": []
+}
