@@ -416,6 +416,53 @@ st.markdown("""
         border-left-color: #c084fc;
     }
 
+    /* Kompaktowe wskaźniki metryk (dashboard i kalendarz) */
+    .compact-metric-card {
+        background: #111827;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 6px 12px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+    .metric-card-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 2px;
+    }
+    .metric-card-value {
+        font-size: 18px;
+        font-weight: 800;
+        color: #38bdf8;
+        line-height: 1.2;
+    }
+
+    /* Pomniejszenie standardowych metryk st.metric */
+    [data-testid="stMetric"] {
+        background: #111827 !important;
+        border: 1px solid #1e293b !important;
+        border-radius: 8px !important;
+        padding: 6px 12px !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.2) !important;
+    }
+    [data-testid="stMetricLabel"] p, [data-testid="stMetricLabel"] label {
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        color: #94a3b8 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.3px !important;
+        margin: 0 !important;
+    }
+    [data-testid="stMetricValue"] div, [data-testid="stMetricValue"] {
+        font-size: 18px !important;
+        font-weight: 800 !important;
+        color: #38bdf8 !important;
+        line-height: 1.2 !important;
+    }
+
     /* Karta wyniku wyszukiwania terminu */
     .slot-result-card {
         background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 78, 59, 0.2));
@@ -1109,20 +1156,20 @@ def render_week_view(current_date, appointments, cfg, is_admin=True):
     start_of_week = current_date - timedelta(days=current_date.weekday())
     end_of_week = start_of_week + timedelta(days=5)
 
-    wn1, wn2, wn3, wn_title = st.columns([1, 1, 1, 3])
-    if wn1.button("◀ Poprzedni Tydzień", key=f"wk_prev_{'adm' if is_admin else 'pub'}", use_container_width=True):
+    wn1, wn2, wn3, wn_title = st.columns([1.2, 1.2, 1.2, 2.4])
+    if wn1.button("◀ Poprz. tydzień", key=f"wk_prev_{'adm' if is_admin else 'pub'}", use_container_width=True):
         st.session_state["cal_date"] -= timedelta(days=7)
         st.rerun()
-    if wn2.button("Bieżący Tydzień", key=f"wk_curr_{'adm' if is_admin else 'pub'}", use_container_width=True):
+    if wn2.button("Bieżący tydzień", key=f"wk_curr_{'adm' if is_admin else 'pub'}", use_container_width=True):
         st.session_state["cal_date"] = date.today()
         st.rerun()
-    if wn3.button("Następny Tydzień ▶", key=f"wk_next_{'adm' if is_admin else 'pub'}", use_container_width=True):
+    if wn3.button("Nast. tydzień ▶", key=f"wk_next_{'adm' if is_admin else 'pub'}", use_container_width=True):
         st.session_state["cal_date"] += timedelta(days=7)
         st.rerun()
 
     week_num = start_of_week.isocalendar()[1]
     wn_title.markdown(f"""
-    <div style="padding-top: 6px; font-size: 15px; font-weight: 800; color: #38bdf8;">
+    <div style="padding-top: 6px; font-size: 14.5px; font-weight: 800; color: #38bdf8;">
         🗓️ Tydzień {week_num}: {start_of_week.strftime('%d.%m')} – {end_of_week.strftime('%d.%m.%Y')}
     </div>
     """, unsafe_allow_html=True)
@@ -1136,9 +1183,24 @@ def render_week_view(current_date, appointments, cfg, is_admin=True):
     
     if is_admin:
         wm1, wm2, wm3 = st.columns(3)
-        wm1.metric("Wizyty w tym tygodniu", f"{len(week_apps)} aut")
-        wm2.metric("Wartość usług tygodnia", f"{tot_week_rev:.0f} zł")
-        wm3.metric("Średnio na dzień roboczy", f"{len(week_apps)/6:.1f} aut")
+        wm1.markdown(f"""
+        <div class="compact-metric-card">
+            <div class="metric-card-label">Wizyty w tym tygodniu</div>
+            <div class="metric-card-value">{len(week_apps)} aut</div>
+        </div>
+        """, unsafe_allow_html=True)
+        wm2.markdown(f"""
+        <div class="compact-metric-card">
+            <div class="metric-card-label">Wartość usług tygodnia</div>
+            <div class="metric-card-value" style="color: #34d399;">{tot_week_rev:.0f} zł</div>
+        </div>
+        """, unsafe_allow_html=True)
+        wm3.markdown(f"""
+        <div class="compact-metric-card">
+            <div class="metric-card-label">Średnio na dzień roboczy</div>
+            <div class="metric-card-value">{len(week_apps)/6:.1f} aut</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -1348,7 +1410,7 @@ if active_page == "public_cal":
 # 2. KALENDARZ WIZYT (ADMIN DLA ZALOGOWANYCH)
 # ==========================================================
 elif active_page == "admin_cal" and st.session_state["authenticated"]:
-    st.header("📅 Kalendarz Wizyt i Stanowisk Warsztatowych")
+    st.markdown('<div style="font-size: 21px; font-weight: 800; color: #f8fafc; margin-bottom: 8px;">📅 Kalendarz Wizyt i Stanowisk Warsztatowych</div>', unsafe_allow_html=True)
 
     apps = db_data.get("appointments", [])
     d_str = st.session_state["cal_date"].strftime("%Y-%m-%d")
@@ -1390,11 +1452,26 @@ elif active_page == "admin_cal" and st.session_state["authenticated"]:
 
         wh = get_working_hours(st.session_state["cal_date"], app_config)
 
-        # Metryki dnia
+        # Metryki dnia (kompaktowe)
         m_col1, m_col2, m_col3 = st.columns(3)
-        m_col1.metric(f"📅 {formatted_adm_title}", f"{len(matching)} aut")
-        m_col2.metric("Suma wartości usług", f"{total_rev:.0f} zł")
-        m_col3.metric("Obłożenie stanowisk", f"St.1: {len(st1_apps)} | St.2: {len(st2_apps)}")
+        m_col1.markdown(f"""
+        <div class="compact-metric-card">
+            <div class="metric-card-label">📅 {day_name}, {st.session_state['cal_date'].strftime('%d.%m.%Y')}</div>
+            <div class="metric-card-value">{len(matching)} aut</div>
+        </div>
+        """, unsafe_allow_html=True)
+        m_col2.markdown(f"""
+        <div class="compact-metric-card">
+            <div class="metric-card-label">Suma wartości usług</div>
+            <div class="metric-card-value" style="color: #34d399;">{total_rev:.0f} zł</div>
+        </div>
+        """, unsafe_allow_html=True)
+        m_col3.markdown(f"""
+        <div class="compact-metric-card">
+            <div class="metric-card-label">Obłożenie stanowisk</div>
+            <div class="metric-card-value" style="font-size: 15px;">St.1: {len(st1_apps)} | St.2: {len(st2_apps)}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
         # --- WIZUALNY PODGLĄD 2 STANOWISK BEZPOŚREDNIO W PANELU ADMINA ---
         st.markdown("#### 🚗 Wizualny Podgląd Obłożenia Stanowisk w tym dniu")
@@ -1420,16 +1497,34 @@ elif active_page == "admin_cal" and st.session_state["authenticated"]:
     # ZAKŁADKA A: REJESTRACJA NOWEJ WIZYTY RĘCZNIE
     with tab_new:
         prefill = st.session_state.get("form_prefill", {})
+        if prefill:
+            pref_d = prefill.get("date")
+            pref_d_txt = pref_d.strftime("%Y-%m-%d") if isinstance(pref_d, (date, datetime)) else str(pref_d or "")
+            st.info(f"📋 **Wypełniono danymi terminu:** Data: **{pref_d_txt}**, Godz: **{prefill.get('start')}**, Stanowisko: **{prefill.get('station')}**, Usługa: **{prefill.get('service', {}).get('name', 'Wybrana')}**")
+
         with st.form("manual_appointment_form"):
-            fa1, fa2, fa3 = st.columns(3)
+            fa0, fa1, fa2 = st.columns([1, 1, 1])
+            init_date = prefill.get("date") if prefill.get("date") else st.session_state["cal_date"]
+            if not isinstance(init_date, date):
+                init_date = date.today()
+            a_date = fa0.date_input("Data wizyty *:", value=init_date)
             a_plate = fa1.text_input("Numer Rejestracyjny *", value=prefill.get("plate", "")).upper().strip()
             a_client = fa2.text_input("Akronim / Imię Klienta *", value=prefill.get("client", ""), placeholder="np. Nowak")
+
+            fa3, fa4, fa5 = st.columns(3)
             a_phone = fa3.text_input("Telefon kontaktowy", placeholder="np. 600 123 456")
 
-            fa4, fa5, fa6 = st.columns(3)
             services = app_config.get("services", [])
             srv_opts = {f"{s.get('name')} - {s.get('price')} zł ({s.get('durationMinutes')} min)": s for s in services}
-            chosen_srv_key = fa4.selectbox("Wybierz usługę:", list(srv_opts.keys()))
+            srv_keys = list(srv_opts.keys())
+            pref_srv_id = prefill.get("service", {}).get("id")
+            def_srv_idx = 0
+            if pref_srv_id:
+                for idx_s, sk in enumerate(srv_keys):
+                    if srv_opts[sk].get("id") == pref_srv_id:
+                        def_srv_idx = idx_s
+                        break
+            chosen_srv_key = fa4.selectbox("Wybierz usługę:", srv_keys, index=def_srv_idx)
             selected_srv = srv_opts[chosen_srv_key]
 
             a_station = fa5.selectbox(
@@ -1438,11 +1533,11 @@ elif active_page == "admin_cal" and st.session_state["authenticated"]:
                 index=1 if prefill.get("station") == 2 else 0,
                 format_func=lambda x: f"Stanowisko {x} (Podnośnik {'A' if x==1 else 'B'})"
             )
-            a_start = fa6.text_input("Godzina rozpoczęcia (HH:MM):", value=prefill.get("start", "09:00"))
 
-            fa7, fa8 = st.columns(2)
+            fa6, fa7, fa8 = st.columns(3)
+            a_start = fa6.text_input("Godzina rozpoczęcia (HH:MM):", value=prefill.get("start", "09:00"))
             dur = selected_srv.get("durationMinutes", 45)
-            default_p = selected_srv.get("price", 140)
+            default_p = prefill.get("service", {}).get("price", selected_srv.get("price", 140))
             a_price = fa7.number_input("Cena usługi (PLN):", value=float(default_p), step=10.0)
 
             try:
@@ -1452,15 +1547,16 @@ elif active_page == "admin_cal" and st.session_state["authenticated"]:
             except Exception:
                 calc_end_str = "09:45"
 
-            fa8.info(f"⏱️ **Czas trwania:** {dur} min | ⏰ **Koniec wizyty:** {calc_end_str}")
+            fa8.info(f"⏱️ **Czas trwania:** {dur} min | ⏰ **Koniec:** {calc_end_str}")
 
-            if st.form_submit_button("💾 Dodaj wizytę do kalendarza", type="primary"):
+            if st.form_submit_button("💾 Dodaj wizytę do kalendarza", type="primary", use_container_width=True):
                 if not a_plate or not a_client:
                     st.error("Wpisz numer rejestracyjny i nazwisko/akronim klienta.")
                 else:
+                    saved_date_str = a_date.strftime("%Y-%m-%d")
                     new_app = {
                         "id": f"app_{int(datetime.now().timestamp())}",
-                        "date": d_str,
+                        "date": saved_date_str,
                         "startTime": a_start,
                         "endTime": calc_end_str,
                         "station": int(a_station),
@@ -1475,8 +1571,9 @@ elif active_page == "admin_cal" and st.session_state["authenticated"]:
                     }
                     db_data["appointments"].append(new_app)
                     save_db(db_data)
+                    st.session_state["cal_date"] = a_date
                     st.session_state["form_prefill"] = {}
-                    st.success("Dodano wizytę do terminarza!")
+                    st.success(f"Dodano wizytę dla {a_plate} na dzień {saved_date_str}!")
                     st.rerun()
 
     # ZAKŁADKA B: POPRAW / USUŃ WIZYTĘ
@@ -1647,15 +1744,61 @@ elif active_page == "admin_cal" and st.session_state["authenticated"]:
         if st.session_state.get("admin_found_slot"):
             fs = st.session_state["admin_found_slot"]["slot"]
             so = st.session_state["admin_found_slot"]["service"]
-            st.success(f"Znaleziono wolny slot: {fs['date']} | Godz. {fs['startTime']} - {fs['endTime']} | Stanowisko {fs['station']} | Koszt: {so.get('price')} zł")
-            if st.button("📅 Wstaw ten termin do formularza rejestracji"):
+            st.markdown(f"""
+            <div class="slot-result-card" style="margin-top: 8px; margin-bottom: 12px;">
+                <div class="slot-result-title">🎉 Znaleziono wolny termin!</div>
+                <div style="font-size: 14px; color: #f8fafc; line-height: 1.6;">
+                    📅 <strong>Data:</strong> {fs['date']}<br>
+                    ⏰ <strong>Godziny:</strong> {fs['startTime']} – {fs['endTime']} ({fs['durationMinutes']} min)<br>
+                    🚗 <strong>Stanowisko:</strong> Stanowisko {fs['station']} (Podnośnik {'A' if fs['station']==1 else 'B'})<br>
+                    🔧 <strong>Usługa:</strong> {so.get('name')} | 💰 <strong>Cena:</strong> {so.get('price')} zł
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("##### ✍️ Szybka rejestracja na znaleziony termin:")
+            rq1, rq2, rq3 = st.columns(3)
+            quick_plate = rq1.text_input("Numer Rejestracyjny *:", key="quick_reg_plate_val").upper().strip()
+            quick_client = rq2.text_input("Akronim / Klient *:", key="quick_reg_client_val", placeholder="np. Nowak").strip()
+            quick_phone = rq3.text_input("Telefon (opcjonalnie):", key="quick_reg_phone_val").strip()
+
+            bq1, bq2 = st.columns([1, 1])
+            if bq1.button("💾 Zapisz wizytę na ten termin teraz", type="primary", use_container_width=True, key="btn_save_quick_direct"):
+                if not quick_plate or not quick_client:
+                    st.error("Wpisz numer rejestracyjny i nazwisko/akronim klienta.")
+                else:
+                    new_app = {
+                        "id": f"app_{int(datetime.now().timestamp())}",
+                        "date": fs["date"],
+                        "startTime": fs["startTime"],
+                        "endTime": fs["endTime"],
+                        "station": int(fs["station"]),
+                        "carLicensePlate": quick_plate,
+                        "clientAcronym": quick_client,
+                        "clientPhone": quick_phone,
+                        "serviceId": so.get("id", "srv"),
+                        "serviceName": so.get("name"),
+                        "durationMinutes": int(fs["durationMinutes"]),
+                        "price": float(so.get("price", 140)),
+                        "status": "planned"
+                    }
+                    db_data["appointments"].append(new_app)
+                    save_db(db_data)
+                    st.session_state["cal_date"] = datetime.strptime(fs["date"], "%Y-%m-%d").date()
+                    st.session_state["admin_found_slot"] = None
+                    st.session_state["form_prefill"] = {}
+                    st.success(f"✅ Zapisano wizytę {quick_plate} ({quick_client}) na {fs['date']} godz. {fs['startTime']}!")
+                    st.rerun()
+
+            if bq2.button("📋 Przejdź do formularza ręcznego z tym terminem", use_container_width=True, key="btn_fill_form_manual"):
                 st.session_state["form_prefill"] = {
                     "date": datetime.strptime(fs["date"], "%Y-%m-%d").date(),
                     "start": fs["startTime"],
                     "station": fs["station"],
                     "service": so
                 }
-                st.rerun()
+                st.session_state["cal_date"] = datetime.strptime(fs["date"], "%Y-%m-%d").date()
+                st.success(f"✅ Wypełniono formularz danymi na {fs['date']} godz. {fs['startTime']}. Przejdź do pierwszej zakładki '➕ Rejestracja Nowej Wizyty'.")
 
     # ZAKŁADKA E: PEŁNA TABELA DLA DNIA
     with tab_table:
