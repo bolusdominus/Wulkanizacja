@@ -521,14 +521,21 @@ def parse_ai_prompt(prompt_text, appointments, cfg):
             except Exception:
                 pass
 
-    m_plate = re.search(r'\b([A-Z]{2,3}\s?[0-9A-Z]{4,5})\b', prompt_text.upper())
-    plate = m_plate.group(1).replace(" ", "") if m_plate else ""
+    # Rejestracja MUSI mieć min. 1 cyfrę (zapobiega myleniu słów typu 'NA JUTRO' z rejestracją)
+    plate_candidates = re.findall(r'\b([A-Z]{2,3})\s?([0-9A-Z]{4,5})\b', prompt_text.upper())
+    plate = ""
+    for p_pre, p_suf in plate_candidates:
+        if any(c.isdigit() for c in p_suf) and p_pre not in ["ALU", "BUS"]:
+            plate = f"{p_pre}{p_suf}"
+            break
 
+    # Akronim / Klient (np. "wpisz Bolka", "dla Kowalskiego")
     client_name = "KLIENT"
-    m_akr = re.search(r'(?:akronim|klient|dla|wpisz)\s+([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż0-9]+)', prompt_text, re.IGNORECASE)
+    m_akr = re.search(r'(?:wpisz|dla|akronim|klient)\s+([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż0-9]+)', prompt_text, re.IGNORECASE)
     if m_akr:
-        val = m_akr.group(1).strip()
-        if val.lower() not in ["na", "pierwszy", "wolny", "termin", "jutro", "piątek", "alu"]:
+        val = m_akr.group(1).strip().capitalize()
+        stopwords = ["Na", "Jutro", "Pojutrze", "Pierwszy", "Wolny", "Termin", "Piątek", "Sobota", "Poniedziałek", "Wtorek", "Środa", "Czwartek", "Alu", "Stal", "Premium", "Bus", "Szybki", "Stanowisko", "Podnośnik"]
+        if val not in stopwords:
             client_name = val
 
     slot = find_first_free_slot(appointments, cfg, dur, target_d, station)
@@ -677,7 +684,6 @@ if st.session_state["authenticated"]:
         st.session_state["current_nav_page"] = "public_cal"
         st.rerun()
 
-# Wybrana strona
 active_page = st.session_state.get("current_nav_page", "public_cal") if st.session_state["authenticated"] else "public_cal"
 
 
@@ -696,7 +702,6 @@ if active_page == "public_cal":
     </div>
     """, unsafe_allow_html=True)
 
-    # Legenda usług BEZ CEN (jedynie szacunkowe czasy trwania)
     st.markdown("""
     <div class="legend-container">
         <span class="legend-title">Usługi (szacowany czas):</span>
@@ -709,7 +714,6 @@ if active_page == "public_cal":
     </div>
     """, unsafe_allow_html=True)
 
-    # WYSZUKIWARKA WOLNEGO TERMINU DLA KLIENTA (BEZ CEN)
     with st.expander("⚡ Sprawdź najbliższy wolny termin", expanded=False):
         q_srv_col, q_date_col, q_btn_col = st.columns([2, 1, 1])
         services = app_config.get("services", [])
@@ -775,7 +779,6 @@ if active_page == "public_cal":
 
     st.markdown(f"### 📅 {formatted_date_title}")
 
-    # Pobieramy wizyty
     appointments = db_data.get("appointments", [])
     day_apps = [a for a in appointments if a.get("date") == date_str]
     st1_apps = [a for a in day_apps if int(a.get("station", 1)) == 1]
@@ -876,7 +879,7 @@ elif active_page == "admin_cal" and st.session_state["authenticated"]:
     with st.expander("🤖 Asystent Planowania AI (Google Gemini / Szybkie komendy)", expanded=True):
         st.markdown("""
         <p style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;">
-            Wpisz polecenie w języku naturalnym, np. <em>"wpisz na piątek 13-go listopada Alu premium pierwszy wolny termin Stanowisko 2 Akronim Wojtek, rejestracja PRA 999WX"</em>
+            Wpisz polecenie w języku naturalnym, np. <em>"wpisz Bolka na jutro na Alu Premium pierwszy wolny termin"</em> lub <em>"wpisz na piątek 13-go listopada Alu premium pierwszy wolny termin Stanowisko 2 Akronim Wojtek, rejestracja PRA 999WX"</em>
         </p>
         """, unsafe_allow_html=True)
 
@@ -890,7 +893,7 @@ elif active_page == "admin_cal" and st.session_state["authenticated"]:
 
         cmd_val = st.text_area(
             "Polecenie dla Asystenta:",
-            value=st.session_state.get("ai_cmd_input", "wpisz na piątek 13-go listopada Alu premium pierwszy wolny termin Stanowisko 2 Akronim Wojtek, rejestracja PRA 999WX"),
+            value=st.session_state.get("ai_cmd_input", "wpisz Bolka na jutro na Alu Premium pierwszy wolny termin"),
             height=70
         )
 
@@ -911,11 +914,16 @@ elif active_page == "admin_cal" and st.session_state["authenticated"]:
                 <div class="slot-result-title">🤖 Agent znalazł termin i przygotował wizytę!</div>
                 <div style="font-size: 14px; color: #e2e8f0; line-height: 1.6;">
                     Znalazłem wolny termin na <strong>{pslot['date']}</strong> w godzinach <strong>{pslot['startTime']} – {pslot['endTime']}</strong> ({pslot['durationMinutes']} min).<br>
-                    Klient: <strong>{prop['client']}</strong> | Rejestracja: <strong>{prop['plate'] or 'Brak'}</strong> | Stanowisko: <strong>Stanowisko {pslot['station']} (Podnośnik {'A' if pslot['station']==1 else 'B'})</strong><br>
-                    Usługa: <strong>{psrv.get('name')}</strong> | Cena usługi: <strong style="color: #38bdf8;">{prop['price']} zł</strong>
+                    Stanowisko: <strong>Stanowisko {pslot['station']} (Podnośnik {'A' if pslot['station']==1 else 'B'})</strong> | Usługa: <strong>{psrv.get('name')}</strong> | Cena: <strong style="color: #38bdf8;">{prop['price']} zł</strong>
                 </div>
             </div>
             """, unsafe_allow_html=True)
+
+            # Pola edycji przed zapisaniem
+            prop_c1, prop_c2, prop_c3 = st.columns(3)
+            final_plate = prop_c1.text_input("Numer rejestracyjny:", value=prop.get("plate", ""), key="ai_final_plate").upper().strip()
+            final_client = prop_c2.text_input("Akronim / Klient:", value=prop.get("client", "KLIENT"), key="ai_final_client").strip()
+            final_phone = prop_c3.text_input("Telefon (opcjonalnie):", value="", key="ai_final_phone").strip()
 
             prop_save_c1, prop_save_c2 = st.columns([1, 1])
             if prop_save_c1.button("✓ Zapisz i dodaj tę wizytę do kalendarza", type="primary", use_container_width=True):
@@ -925,9 +933,9 @@ elif active_page == "admin_cal" and st.session_state["authenticated"]:
                     "startTime": pslot["startTime"],
                     "endTime": pslot["endTime"],
                     "station": int(pslot["station"]),
-                    "carLicensePlate": prop["plate"],
-                    "clientAcronym": prop["client"],
-                    "clientPhone": "",
+                    "carLicensePlate": final_plate,
+                    "clientAcronym": final_client,
+                    "clientPhone": final_phone,
                     "serviceId": psrv.get("id", "srv"),
                     "serviceName": psrv.get("name"),
                     "durationMinutes": int(pslot["durationMinutes"]),
@@ -970,7 +978,7 @@ elif active_page == "admin_cal" and st.session_state["authenticated"]:
             fs = st.session_state["admin_found_slot"]["slot"]
             so = st.session_state["admin_found_slot"]["service"]
             st.success(f"Znaleziono wolny slot: {fs['date']} | Godz. {fs['startTime']} - {fs['endTime']} | Stanowisko {fs['station']} | Koszt: {so.get('price')} zł")
-            if st.button("📅 Wstaw ten termin do poniższego formularza"):
+            if st.button("📅 Wstaw ten termin do formularza dodawania"):
                 st.session_state["form_prefill"] = {
                     "date": datetime.strptime(fs["date"], "%Y-%m-%d").date(),
                     "start": fs["startTime"],
@@ -981,8 +989,8 @@ elif active_page == "admin_cal" and st.session_state["authenticated"]:
 
     st.markdown("---")
 
-    # --- MODUŁ 3: LISTA WIZYT W WYBRANYM DNIU + PODSUMOWANIE FINANSOWE ---
-    adm_date = st.date_input("Wybierz dzień kalendarza do edycji:", value=st.session_state.get("cal_date", date.today()))
+    # --- MODUŁ 3: LISTA WIZYT W WYBRANYM DNIU + PODSUMOWANIE ---
+    adm_date = st.date_input("Wybierz dzień kalendarza do podglądu / edycji:", value=st.session_state.get("cal_date", date.today()))
     d_str = adm_date.strftime("%Y-%m-%d")
 
     apps = db_data.get("appointments", [])
@@ -1010,21 +1018,75 @@ elif active_page == "admin_cal" and st.session_state["authenticated"]:
             "status": "Status"
         }), use_container_width=True)
 
-        st.subheader("Usuń wybraną wizytę")
-        del_opts = {f"{a.get('startTime')}-{a.get('endTime')} | St.{a.get('station')} | {a.get('carLicensePlate')} ({a.get('clientAcronym')}) - {a.get('serviceName')}": a.get("id") for a in matching}
-        chosen_del = st.selectbox("Wybierz wizytę do usunięcia:", list(del_opts.keys()))
-        if st.button("🗑️ Usuń tę wizytę z kalendarza"):
-            aid = del_opts[chosen_del]
-            db_data["appointments"] = [a for a in apps if a.get("id") != aid]
-            save_db(db_data)
-            st.success("Usunięto wizytę.")
-            st.rerun()
+        # --- MODUŁ EDYCJI / POPRAWY WIZYTY ---
+        st.markdown("---")
+        st.subheader("✏️ Edytuj / Popraw lub Usuń wybraną wizytę")
+        del_opts = {f"{a.get('startTime')}-{a.get('endTime')} | St.{a.get('station')} | {a.get('carLicensePlate') or 'Brak rej.'} ({a.get('clientAcronym')}) - {a.get('serviceName')}": a.get("id") for a in matching}
+        chosen_app_label = st.selectbox("Wybierz wizytę do poprawy:", list(del_opts.keys()), key="chosen_edit_app")
+        chosen_app_id = del_opts[chosen_app_label]
+        target_app = next((a for a in apps if a.get("id") == chosen_app_id), None)
+
+        if target_app:
+            with st.expander(f"📝 Formularz edycji wizyty: {chosen_app_label}", expanded=True):
+                with st.form("edit_appointment_form"):
+                    ec1, ec2, ec3 = st.columns(3)
+                    new_plate = ec1.text_input("Numer Rejestracyjny:", value=target_app.get("carLicensePlate", "")).upper().strip()
+                    new_client = ec2.text_input("Akronim / Imię Klienta:", value=target_app.get("clientAcronym", "")).strip()
+                    new_phone = ec3.text_input("Telefon kontaktowy:", value=target_app.get("clientPhone", "")).strip()
+
+                    ec4, ec5, ec6 = st.columns(3)
+                    services = app_config.get("services", [])
+                    srv_opts_edit = {s.get("name", s.get("id")): s for s in services}
+                    curr_srv_name = target_app.get("serviceName", "")
+                    srv_index = 0
+                    for idx, sname in enumerate(srv_opts_edit.keys()):
+                        if sname == curr_srv_name:
+                            srv_index = idx
+                            break
+                    selected_edit_srv_name = ec4.selectbox("Usługa:", list(srv_opts_edit.keys()), index=srv_index)
+                    selected_edit_srv = srv_opts_edit[selected_edit_srv_name]
+
+                    curr_station = int(target_app.get("station", 1))
+                    new_station = ec5.selectbox("Stanowisko:", [1, 2], index=0 if curr_station == 1 else 1, format_func=lambda x: f"Stanowisko {x} (Podnośnik {'A' if x==1 else 'B'})")
+                    
+                    status_list = ["planned", "completed", "cancelled"]
+                    curr_st_val = target_app.get("status", "planned")
+                    st_idx = status_list.index(curr_st_val) if curr_st_val in status_list else 0
+                    new_status = ec6.selectbox("Status wizyty:", status_list, index=st_idx, format_func=lambda x: "Zaplanowana" if x=="planned" else ("Zrealizowana" if x=="completed" else "Odwołana"))
+
+                    ec7, ec8, ec9 = st.columns(3)
+                    new_start = ec7.text_input("Godzina rozpoczęcia (HH:MM):", value=target_app.get("startTime", "08:00"))
+                    new_end = ec8.text_input("Godzina zakończenia (HH:MM):", value=target_app.get("endTime", "09:00"))
+                    new_price = ec9.number_input("Cena usługi (PLN):", value=float(target_app.get("price", 140)), step=10.0)
+
+                    b_save_edit, b_del_edit = st.columns(2)
+                    save_clicked = b_save_edit.form_submit_button("💾 Zapisz poprawki wizyty", type="primary", use_container_width=True)
+                    if save_clicked:
+                        target_app["carLicensePlate"] = new_plate
+                        target_app["clientAcronym"] = new_client
+                        target_app["clientPhone"] = new_phone
+                        target_app["serviceName"] = selected_edit_srv.get("name")
+                        target_app["serviceId"] = selected_edit_srv.get("id")
+                        target_app["station"] = int(new_station)
+                        target_app["status"] = new_status
+                        target_app["startTime"] = new_start
+                        target_app["endTime"] = new_end
+                        target_app["price"] = float(new_price)
+                        save_db(db_data)
+                        st.success("✅ Pomyślnie zaktualizowano dane wizyty!")
+                        st.rerun()
+
+                if st.button("🗑️ Usuń tę wizytę z kalendarza", type="secondary", use_container_width=True):
+                    db_data["appointments"] = [a for a in apps if a.get("id") != chosen_app_id]
+                    save_db(db_data)
+                    st.success("Usunięto wizytę.")
+                    st.rerun()
     else:
         st.info("Brak zarezerwowanych wizyt w tym dniu.")
 
     st.markdown("---")
 
-    # --- MODUŁ 4: FORMULARZ DODAWANIA WIZYTY Z PODGLĄDEM CENY I CZASU ---
+    # --- MODUŁ 4: FORMULARZ DODAWANIA WIZYTY RĘCZNIE ---
     st.subheader("➕ Dodaj nową wizytę ręcznie")
     
     prefill = st.session_state.get("form_prefill", {})
@@ -1106,7 +1168,6 @@ elif active_page == "dashboard" and st.session_state["authenticated"]:
     m3.metric("Tdół", count_tdol)
     m4.metric("Tgóra", count_tgora)
 
-    # Opony zalegające > 180 dni
     aging = [d for d in deposits if calculate_days(d.get("depositDate", "")) >= 180]
     if aging:
         st.warning(f"⚠️ **Wykryto {len(aging)} depozytów zalegających powyżej 180 dni!**")
@@ -1152,7 +1213,6 @@ elif active_page == "dashboard" and st.session_state["authenticated"]:
         }
         st.dataframe(df_main[[c for c in col_names.keys() if c in df_main.columns]].rename(columns=col_names), use_container_width=True)
 
-        # Eksport Excel
         out = io.BytesIO()
         with pd.ExcelWriter(out, engine='openpyxl') as wr:
             df_main.to_excel(wr, index=False, sheet_name='Magazyn_Opon')
@@ -1267,7 +1327,7 @@ elif active_page == "config" and st.session_state["authenticated"]:
     st.header("⚙️ Konfiguracja, Słowniki i Harmonogram Pracy")
     st.caption("Wszystkie poniższe tabele są w pełni edytowalne. Możesz zmieniać nazwy, czasy trwania, ceny i godziny pracy.")
 
-    # --- SEKCJA A: SŁOWNIK USŁUG (W PEŁNI EDYTOWALNY) ---
+    # --- SEKCJA A: SŁOWNIK USŁUG ---
     st.subheader("🔧 Słownik Usług, Czasów Trwania i Cen")
     st.info("💡 Kliknij w dowolną komórkę tabeli, aby zmienić nazwę usługi, czas w minutach lub domyślną cenę. Możesz też dopisywać nowe usługi.")
 
@@ -1349,7 +1409,6 @@ elif active_page == "config" and st.session_state["authenticated"]:
     cfg_emails = st.text_area("Uprawnione adresy e-mail pracowników (rozdzielone przecinkami):", value=emails_txt)
 
     if st.button("💾 Zapisz Całą Konfigurację i Słowniki", type="primary", use_container_width=True):
-        # 1. Zapis usług
         new_services_list = []
         for _, r in edited_srv_df.iterrows():
             if str(r["Pełna nazwa usługi"]).strip():
@@ -1362,7 +1421,6 @@ elif active_page == "config" and st.session_state["authenticated"]:
                 })
         app_config["services"] = new_services_list
 
-        # 2. Zapis miesięcy
         new_m_dict = {}
         for idx, r in edited_months_df.iterrows():
             m_idx_str = str(idx + 1)
@@ -1376,7 +1434,6 @@ elif active_page == "config" and st.session_state["authenticated"]:
             }
         app_config["monthlyWorkingHours"] = new_m_dict
 
-        # 3. Zapis bezpieczeństwa i nagłówka
         app_config["adminPassword"] = cfg_pwd.strip()
         app_config["publicHeader"] = cfg_hdr.strip()
         parsed_e = [x.strip().lower() for x in cfg_emails.split(",") if x.strip()]
