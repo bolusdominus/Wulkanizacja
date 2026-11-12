@@ -20,7 +20,7 @@ DB_FILE = os.path.join(BASE_DIR, "database.json")
 CONFIG_FILE = os.path.join(BASE_DIR, "calendar_config.json")
 PUBLIC_CONFIG_FILE = os.path.join(BASE_DIR, "public", "calendar_config.json")
 
-# --- WSTRZYKIWANIE STYLÓW DARK MODE (ZOPTYMALIZOWANYCH POD MOBILE I PC) ---
+# --- WSTRZYKIWANIE STYLÓW DARK MODE (MOBILE & PC) ---
 st.markdown("""
 <style>
     /* Globalne tło aplikacji */
@@ -30,7 +30,7 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     }
 
-    /* Dopasowanie marginesów kontenera głównego */
+    /* Marginesy kontenera głównego */
     .block-container {
         padding-top: 1.0rem !important;
         padding-bottom: 2.5rem !important;
@@ -43,6 +43,16 @@ st.markdown("""
     [data-testid="stSidebar"] {
         background-color: #101726 !important;
         border-right: 1px solid #1e293b !important;
+    }
+
+    /* Przyciski nawigacyjne w panelu bocznym */
+    [data-testid="stSidebar"] button {
+        margin-bottom: 6px !important;
+        text-align: left !important;
+        justify-content: flex-start !important;
+        font-size: 14px !important;
+        border-radius: 8px !important;
+        min-height: 44px !important;
     }
 
     header[data-testid="stHeader"] {
@@ -116,7 +126,7 @@ st.markdown("""
         color: #94a3b8;
     }
 
-    /* Baner z telefonem - bezpośrednie wybieranie na smartfonie */
+    /* Baner z telefonem */
     .phone-hero-banner {
         background: linear-gradient(135deg, #0369a1, #0284c7);
         border: 1px solid #38bdf8;
@@ -217,7 +227,7 @@ st.markdown("""
         border: 1px solid rgba(16, 185, 129, 0.35);
     }
 
-    /* Kafelki wizyt w kalendarzu (Publiczny) */
+    /* Kafelki wizyt w kalendarzu */
     .app-card-box {
         background: #151d30;
         border-radius: 10px;
@@ -273,7 +283,7 @@ st.markdown("""
         color: #f8fafc;
     }
 
-    /* Karta wyniku wyszukiwania terminu / Agenta AI */
+    /* Karta wyniku wyszukiwania terminu */
     .slot-result-card {
         background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 78, 59, 0.2));
         border: 1.5px solid #10b981;
@@ -287,15 +297,6 @@ st.markdown("""
         font-size: 16px;
         font-weight: 800;
         margin-bottom: 8px;
-    }
-
-    /* Tabela cennika */
-    .price-table-box {
-        background: #131b2e;
-        border: 1px solid #23314d;
-        border-radius: 10px;
-        padding: 14px;
-        margin-bottom: 14px;
     }
 
     /* Responsywność dla telefonów (ekrany <= 768px) */
@@ -471,7 +472,6 @@ def parse_ai_prompt(prompt_text, appointments, cfg):
     p = prompt_text.lower().strip()
     services = cfg.get("services", [])
     
-    # 1. Usługa
     target_srv = None
     if "premium" in p:
         target_srv = next((s for s in services if "premium" in s.get("id", "").lower()), None)
@@ -490,14 +490,12 @@ def parse_ai_prompt(prompt_text, appointments, cfg):
     dur = target_srv.get("durationMinutes", 45) if target_srv else 45
     price = target_srv.get("price", 140) if target_srv else 140
 
-    # 2. Stanowisko
     station = 0
     if "stanowisko 2" in p or "podnośnik b" in p or "st 2" in p:
         station = 2
     elif "stanowisko 1" in p or "podnośnik a" in p or "st 1" in p:
         station = 1
 
-    # 3. Data
     target_d = date.today()
     if "jutro" in p:
         target_d = date.today() + timedelta(days=1)
@@ -516,7 +514,6 @@ def parse_ai_prompt(prompt_text, appointments, cfg):
                 target_d = date.today() + timedelta(days=diff)
                 break
         
-        # Konkretny dzień np. 13-go, 13 listopada
         m_day = re.search(r'(\d{1,2})(?:-go|-ego|\.|\s)?\s*(listopad|grudzi|stycz|luty|marz|kwiet|maj|czerwc|lipc|sierp|wrzes|pa[źz]dzier)?', p)
         if m_day and m_day.group(1):
             try:
@@ -524,11 +521,9 @@ def parse_ai_prompt(prompt_text, appointments, cfg):
             except Exception:
                 pass
 
-    # 4. Numer rejestracyjny
     m_plate = re.search(r'\b([A-Z]{2,3}\s?[0-9A-Z]{4,5})\b', prompt_text.upper())
     plate = m_plate.group(1).replace(" ", "") if m_plate else ""
 
-    # 5. Akronim / Klient
     client_name = "KLIENT"
     m_akr = re.search(r'(?:akronim|klient|dla|wpisz)\s+([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż0-9]+)', prompt_text, re.IGNORECASE)
     if m_akr:
@@ -536,7 +531,6 @@ def parse_ai_prompt(prompt_text, appointments, cfg):
         if val.lower() not in ["na", "pierwszy", "wolny", "termin", "jutro", "piątek", "alu"]:
             client_name = val
 
-    # 6. Wyszukanie slotu
     slot = find_first_free_slot(appointments, cfg, dur, target_d, station)
     if not slot and station != 0:
         slot = find_first_free_slot(appointments, cfg, dur, target_d, 0)
@@ -565,6 +559,8 @@ if "cal_date" not in st.session_state:
     st.session_state["cal_date"] = date.today()
 if "ai_proposed_visit" not in st.session_state:
     st.session_state["ai_proposed_visit"] = None
+if "current_nav_page" not in st.session_state:
+    st.session_state["current_nav_page"] = "public_cal"
 
 # --- GÓRNY PASEK NAWIGACJI ---
 header_col1, header_col2 = st.columns([3, 1])
@@ -596,6 +592,7 @@ with header_col2:
             st.session_state["authenticated"] = False
             st.session_state["logged_user"] = ""
             st.session_state["show_login_modal"] = False
+            st.session_state["current_nav_page"] = "public_cal"
             st.rerun()
 
 # --- OKIENKO LOGOWANIA ---
@@ -631,6 +628,7 @@ if not st.session_state["authenticated"] and st.session_state["show_login_modal"
                 st.session_state["authenticated"] = True
                 st.session_state["logged_user"] = login_email
                 st.session_state["show_login_modal"] = False
+                st.session_state["current_nav_page"] = "admin_cal"
                 st.success("Zalogowano pomyślnie!")
                 st.rerun()
 
@@ -639,45 +637,54 @@ if not st.session_state["authenticated"] and st.session_state["show_login_modal"
             st.rerun()
     st.markdown("---")
 
-# --- PASEK BOCZNY (SIDEBAR) – WIDOCZNY TYLKO DLA ZALOGOWANYCH ---
+# --- PASEK BOCZNY (PRZYCISKI NAWIGACYJNE DLA ZALOGOWANYCH) ---
 if st.session_state["authenticated"]:
     st.sidebar.markdown("## 🛞 Panel Warsztatu")
-    st.sidebar.success(f"Zalogowano:\n`{st.session_state['logged_user']}`")
-    
-    menu_choice = st.sidebar.radio(
-        "Nawigacja:",
-        [
-            "👁️ Podgląd Publiczny (dla Klientów)",
-            "📅 Kalendarz Wizyt (Admin)",
-            "📊 Dashboard & Magazyn Opon",
-            "➕ Przyjmij Nowy Depozyt",
-            "📜 Archiwum Wydanych Opon",
-            "⚙️ Konfiguracja & Uprawnienia"
-        ]
-    )
+    st.sidebar.success(f"Zalogowano jako:\n`{st.session_state['logged_user']}`")
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("**Nawigacja po panelu:**")
+
+    nav_buttons = [
+        ("📅 Kalendarz Wizyt (Admin)", "admin_cal"),
+        ("📊 Dashboard & Magazyn Opon", "dashboard"),
+        ("➕ Przyjmij Nowy Depozyt", "intake"),
+        ("📜 Archiwum Wydanych Opon", "archive"),
+        ("⚙️ Konfiguracja & Słowniki", "config"),
+        ("👁️ Podgląd Publiczny (dla Klientów)", "public_cal")
+    ]
+
+    for label, page_key in nav_buttons:
+        is_active = (st.session_state.get("current_nav_page") == page_key)
+        btn_type = "primary" if is_active else "secondary"
+        btn_caption = f"▶ {label}" if is_active else label
+        if st.sidebar.button(btn_caption, key=f"nav_btn_{page_key}", use_container_width=True, type=btn_type):
+            st.session_state["current_nav_page"] = page_key
+            st.rerun()
 
     deposits = db_data.get("deposits", [])
     archive = db_data.get("archive", [])
     appointments = db_data.get("appointments", [])
 
     st.sidebar.markdown("---")
-    st.sidebar.caption("📦 **Podsumowanie:**")
-    st.sidebar.write(f"• Depozyty: `{len(deposits)}`")
-    st.sidebar.write(f"• Archiwum: `{len(archive)}`")
-    st.sidebar.write(f"• Wizyty: `{len(appointments)}`")
+    st.sidebar.caption("📦 **Podsumowanie bazy:**")
+    st.sidebar.write(f"• Depozyty w magazynie: `{len(deposits)}`")
+    st.sidebar.write(f"• Archiwum wydanych: `{len(archive)}`")
+    st.sidebar.write(f"• Wizyty w terminarzu: `{len(appointments)}`")
 
-    if st.sidebar.button("🚪 Wyloguj się z panelu", use_container_width=True):
+    if st.sidebar.button("🚪 Wyloguj się", key="btn_side_logout", use_container_width=True):
         st.session_state["authenticated"] = False
         st.session_state["logged_user"] = ""
+        st.session_state["current_nav_page"] = "public_cal"
         st.rerun()
-else:
-    menu_choice = "👁️ Podgląd Publiczny (dla Klientów)"
+
+# Wybrana strona
+active_page = st.session_state.get("current_nav_page", "public_cal") if st.session_state["authenticated"] else "public_cal"
 
 
 # ==========================================================
-# 1. WIDOK TERMINARZA DLA KLIENTÓW (PUBLICZNY & RESPONSIVE)
+# 1. WIDOK TERMINARZA DLA KLIENTÓW (PUBLICZNY - BEZ CEN)
 # ==========================================================
-if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
+if active_page == "public_cal":
     st.markdown("""
     <div class="phone-hero-banner">
         <div class="phone-banner-text">
@@ -689,25 +696,25 @@ if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
     </div>
     """, unsafe_allow_html=True)
 
-    # Legenda usług
+    # Legenda usług BEZ CEN (jedynie szacunkowe czasy trwania)
     st.markdown("""
     <div class="legend-container">
-        <span class="legend-title">Usługi:</span>
-        <span class="legend-chip"><span class="legend-dot" style="background: #0284c7;"></span> Stal (45m - 120 zł)</span>
-        <span class="legend-chip"><span class="legend-dot" style="background: #10b981;"></span> Alu ≤ 17" (45m - 140 zł)</span>
-        <span class="legend-chip"><span class="legend-dot" style="background: #8b5cf6;"></span> AluPremium > 17" (1h - 180 zł)</span>
-        <span class="legend-chip"><span class="legend-dot" style="background: #f59e0b;"></span> Bus (1h - 200 zł)</span>
-        <span class="legend-chip"><span class="legend-dot" style="background: #ec4899;"></span> Szybki (30m - 60 zł)</span>
+        <span class="legend-title">Usługi (szacowany czas):</span>
+        <span class="legend-chip"><span class="legend-dot" style="background: #0284c7;"></span> Stal (ok. 45 min)</span>
+        <span class="legend-chip"><span class="legend-dot" style="background: #10b981;"></span> Alu ≤ 17" (ok. 45 min)</span>
+        <span class="legend-chip"><span class="legend-dot" style="background: #8b5cf6;"></span> AluPremium > 17" (ok. 60 min)</span>
+        <span class="legend-chip"><span class="legend-dot" style="background: #f59e0b;"></span> Bus (ok. 60 min)</span>
+        <span class="legend-chip"><span class="legend-dot" style="background: #ec4899;"></span> Szybki serwis (ok. 30 min)</span>
         <span style="margin-left: auto; color: #38bdf8; font-weight: 700;">🕒 08:00 – 18:00</span>
     </div>
     """, unsafe_allow_html=True)
 
-    # WYSZUKIWARKA WOLNEGO TERMINU DLA KLIENTA (EXPANDER)
-    with st.expander("⚡ Sprawdź najbliższy wolny termin i koszt usługi", expanded=False):
+    # WYSZUKIWARKA WOLNEGO TERMINU DLA KLIENTA (BEZ CEN)
+    with st.expander("⚡ Sprawdź najbliższy wolny termin", expanded=False):
         q_srv_col, q_date_col, q_btn_col = st.columns([2, 1, 1])
         services = app_config.get("services", [])
-        srv_map = {f"{s.get('name')} ({s.get('price')} zł)": s for s in services}
-        chosen_q_srv = q_srv_col.selectbox("Wybierz rodzaj usługi:", list(srv_map.keys()), key="pub_q_srv")
+        srv_map = {f"{s.get('name')} (czas: ok. {s.get('durationMinutes')} min)": s for s in services}
+        chosen_q_srv = q_srv_col.selectbox("Wybierz rodzaj kół / usługę:", list(srv_map.keys()), key="pub_q_srv")
         chosen_srv_obj = srv_map[chosen_q_srv]
         q_start_d = q_date_col.date_input("Od kiedy szukać:", value=date.today(), key="pub_q_date")
         
@@ -730,10 +737,9 @@ if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
                 <div class="slot-result-title">🎉 Znaleziono najbliższy wolny termin!</div>
                 <div style="font-size: 15px; color: #f8fafc; line-height: 1.6;">
                     📅 <strong>Data:</strong> {fs['date']}<br>
-                    ⏰ <strong>Godzina:</strong> {fs['startTime']} – {fs['endTime']} ({fs['durationMinutes']} min)<br>
+                    ⏰ <strong>Godzina:</strong> {fs['startTime']} – {fs['endTime']} (szacunkowy czas: {fs['durationMinutes']} min)<br>
                     🚗 <strong>Stanowisko:</strong> Stanowisko {fs['station']} (Podnośnik {'A' if fs['station']==1 else 'B'})<br>
-                    🔧 <strong>Usługa:</strong> {srv_o.get('name')}<br>
-                    💰 <strong>Cena usługi:</strong> <span style="font-size: 17px; color: #38bdf8; font-weight: 800;">{srv_o.get('price')} zł</span>
+                    🔧 <strong>Usługa:</strong> {srv_o.get('name')}
                 </div>
                 <div style="margin-top: 12px;">
                     <a href="tel:600223669" class="phone-call-btn">📞 Zadzwoń i zarezerwuj ten termin: 600 223 669</a>
@@ -796,17 +802,16 @@ if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
         <div class="app-card-box {css_cls}">
             <div class="card-top-row">
                 <span class="time-badge">⏰ {start_t} – {end_t}</span>
-                <span class="duration-badge">{dur} min</span>
+                <span class="duration-badge">ok. {dur} min</span>
             </div>
             <div class="service-badge">{pretty_name}</div>
         </div>
         """, unsafe_allow_html=True)
 
-    tab_all, tab_st1, tab_st2, tab_prices = st.tabs([
+    tab_all, tab_st1, tab_st2 = st.tabs([
         "🏢 Wszystkie stanowiska (Podgląd)",
         f"🚗 Stanowisko 1 ({len(st1_apps)} zajęte)",
-        f"🚙 Stanowisko 2 ({len(st2_apps)} zajęte)",
-        "💳 Cennik Usług"
+        f"🚙 Stanowisko 2 ({len(st2_apps)} zajęte)"
     ])
 
     with tab_all:
@@ -857,16 +862,6 @@ if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
         else:
             st.success("✓ Stanowisko 2 jest wolne w wybranym dniu!")
 
-    with tab_prices:
-        st.markdown("#### 💳 Oficjalny Cennik Usług Wymiany i Serwisu Opon")
-        df_p = pd.DataFrame(app_config.get("services", []))
-        if not df_p.empty:
-            st.dataframe(df_p[["name", "durationMinutes", "price"]].rename(columns={
-                "name": "Nazwa Usługi",
-                "durationMinutes": "Czas trwania (min)",
-                "price": "Cena (PLN)"
-            }), use_container_width=True)
-
     st.markdown("---")
     st.info("💡 **Chcesz zarezerwować termin?** Zadzwoń pod numer **600 223 669**.")
 
@@ -874,7 +869,7 @@ if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
 # ==========================================================
 # 2. KALENDARZ WIZYT (ADMIN DLA ZALOGOWANYCH)
 # ==========================================================
-elif menu_choice == "📅 Kalendarz Wizyt (Admin)" and st.session_state["authenticated"]:
+elif active_page == "admin_cal" and st.session_state["authenticated"]:
     st.header("📅 Zarządzanie Wizytami i Terminarzem")
 
     # --- MODUŁ 1: INTELIGENTNY ASYSTENT PLANOWANIA AI (GEMINI) ---
@@ -1059,7 +1054,6 @@ elif menu_choice == "📅 Kalendarz Wizyt (Admin)" and st.session_state["authent
         default_p = selected_srv.get("price", 140)
         a_price = fa7.number_input("Cena usługi (PLN):", value=float(default_p), step=10.0)
 
-        # Wyliczenie godziny zakończenia
         try:
             sh, sm = map(int, a_start.split(":"))
             end_m_calc = sh * 60 + sm + dur
@@ -1098,7 +1092,7 @@ elif menu_choice == "📅 Kalendarz Wizyt (Admin)" and st.session_state["authent
 # ==========================================================
 # 3. DASHBOARD & MAGAZYN OPON (DLA ZALOGOWANYCH)
 # ==========================================================
-elif menu_choice == "📊 Dashboard & Magazyn Opon" and st.session_state["authenticated"]:
+elif active_page == "dashboard" and st.session_state["authenticated"]:
     st.header("📊 Stan Magazynu Opon")
 
     deposits = db_data.get("deposits", [])
@@ -1192,7 +1186,7 @@ elif menu_choice == "📊 Dashboard & Magazyn Opon" and st.session_state["authen
 # ==========================================================
 # 4. PRZYJMIJ NOWY DEPOZYT (DLA ZALOGOWANYCH)
 # ==========================================================
-elif menu_choice == "➕ Przyjmij Nowy Depozyt" and st.session_state["authenticated"]:
+elif active_page == "intake" and st.session_state["authenticated"]:
     st.header("➕ Przyjęcie Nowego Depozytu Opon")
     with st.form("new_deposit"):
         c1, c2 = st.columns(2)
@@ -1246,7 +1240,7 @@ elif menu_choice == "➕ Przyjmij Nowy Depozyt" and st.session_state["authentica
 # ==========================================================
 # 5. ARCHIWUM WYDANYCH OPON (DLA ZALOGOWANYCH)
 # ==========================================================
-elif menu_choice == "📜 Archiwum Wydanych Opon" and st.session_state["authenticated"]:
+elif active_page == "archive" and st.session_state["authenticated"]:
     st.header("📜 Archiwum Wydanych Depozytów")
     archive = db_data.get("archive", [])
     if archive:
@@ -1267,34 +1261,129 @@ elif menu_choice == "📜 Archiwum Wydanych Opon" and st.session_state["authenti
 
 
 # ==========================================================
-# 6. KONFIGURACJA & UPRAWNIENIA (DLA ZALOGOWANYCH)
+# 6. KONFIGURACJA & SŁOWNIKI (DLA ZALOGOWANYCH)
 # ==========================================================
-elif menu_choice == "⚙️ Konfiguracja & Uprawnienia" and st.session_state["authenticated"]:
-    st.header("⚙️ Konfiguracja i Uprawnienia Pracowników")
+elif active_page == "config" and st.session_state["authenticated"]:
+    st.header("⚙️ Konfiguracja, Słowniki i Harmonogram Pracy")
+    st.caption("Wszystkie poniższe tabele są w pełni edytowalne. Możesz zmieniać nazwy, czasy trwania, ceny i godziny pracy.")
 
-    with st.form("cfg_form"):
-        st.subheader("Dostęp i Bezpieczeństwo")
-        curr_pwd = app_config.get("adminPassword", "admin")
-        new_pwd = st.text_input("Hasło do Panelu Warsztatu:", value=curr_pwd, type="password")
+    # --- SEKCJA A: SŁOWNIK USŁUG (W PEŁNI EDYTOWALNY) ---
+    st.subheader("🔧 Słownik Usług, Czasów Trwania i Cen")
+    st.info("💡 Kliknij w dowolną komórkę tabeli, aby zmienić nazwę usługi, czas w minutach lub domyślną cenę. Możesz też dopisywać nowe usługi.")
 
-        curr_emails = app_config.get("allowedEmails", ["michal@twoje4kola.pl", "alert@itover.pl"])
-        emails_str = ", ".join(curr_emails) if isinstance(curr_emails, list) else str(curr_emails)
-        new_emails = st.text_area("Uprawnione adresy e-mail pracowników (rozdzielone przecinkami):", value=emails_str)
+    srv_list = app_config.get("services", [])
+    services_edit_data = []
+    for s in srv_list:
+        services_edit_data.append({
+            "Identyfikator": s.get("id", "usluga"),
+            "Etykieta skrócona": s.get("shortLabel", s.get("id", "")),
+            "Pełna nazwa usługi": s.get("name", ""),
+            "Czas trwania (min)": int(s.get("durationMinutes", 45)),
+            "Domyślna cena (PLN)": float(s.get("price", 100))
+        })
 
-        st.subheader("Ustawienia Terminarza Publicznego")
-        curr_hdr = app_config.get("publicHeader", "Wulkanizacja Michał - rezerwacja terminu 600223669")
-        new_hdr = st.text_input("Tekst w banerze kontaktowym:", value=curr_hdr)
+    df_srv_input = pd.DataFrame(services_edit_data)
+    edited_srv_df = st.data_editor(
+        df_srv_input,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="data_editor_services",
+        column_config={
+            "Identyfikator": st.column_config.TextColumn("Klucz ID (unikalny)", required=True),
+            "Etykieta skrócona": st.column_config.TextColumn("Etykieta (np. Stal, Alu)", width="small", required=True),
+            "Pełna nazwa usługi": st.column_config.TextColumn("Pełna nazwa wyświetlana", width="large", required=True),
+            "Czas trwania (min)": st.column_config.NumberColumn("Czas trwania (min)", min_value=10, max_value=240, step=5, required=True),
+            "Domyślna cena (PLN)": st.column_config.NumberColumn("Cena domyślna (PLN)", min_value=0.0, step=10.0, required=True)
+        }
+    )
 
-        st.subheader("Słownik Usług i Domyślne Ceny")
-        st.caption("Ceny i czasy trwania wykorzystywane przez Asystenta AI oraz formularz wizyt:")
-        df_services = pd.DataFrame(app_config.get("services", []))
-        st.dataframe(df_services, use_container_width=True)
+    st.markdown("---")
 
-        if st.form_submit_button("💾 Zapisz Konfigurację", type="primary"):
-            app_config["adminPassword"] = new_pwd.strip()
-            parsed_emails = [e.strip().lower() for e in new_emails.split(",") if e.strip()]
-            app_config["allowedEmails"] = parsed_emails
-            app_config["publicHeader"] = new_hdr.strip()
-            save_config(app_config)
-            st.success("Zapisano nową konfigurację!")
+    # --- SEKCJA B: GODZINY PRACY W MIESIĄCACH ---
+    st.subheader("🕒 Harmonogram Godzin Pracy (Wszystkie 12 Miesięcy)")
+    months_names = [
+        "1. Styczeń", "2. Luty", "3. Marzec", "4. Kwiecień", "5. Maj", "6. Czerwiec",
+        "7. Lipiec", "8. Sierpień", "9. Wrzesień", "10. Październik", "11. Listopad", "12. Grudzień"
+    ]
+    monthly_dict = app_config.get("monthlyWorkingHours", {})
+    m_rows = []
+    for i in range(1, 13):
+        m_k = str(i)
+        mc = monthly_dict.get(m_k, {"start": "08:00", "end": "18:00", "saturdayStart": "08:00", "saturdayEnd": "14:00", "workSaturday": True, "note": ""})
+        m_rows.append({
+            "Miesiąc": months_names[i - 1],
+            "Pon - Pt (Od)": mc.get("start", "08:00"),
+            "Pon - Pt (Do)": mc.get("end", "18:00"),
+            "Sobota (Od)": mc.get("saturdayStart", "08:00"),
+            "Sobota (Do)": mc.get("saturdayEnd", "14:00"),
+            "Czynne w soboty": bool(mc.get("workSaturday", True)),
+            "Uwagi / Sezon": mc.get("note", "")
+        })
+
+    df_m_input = pd.DataFrame(m_rows)
+    edited_months_df = st.data_editor(
+        df_m_input,
+        use_container_width=True,
+        key="data_editor_months",
+        column_config={
+            "Miesiąc": st.column_config.TextColumn("Miesiąc", disabled=True),
+            "Pon - Pt (Od)": st.column_config.TextColumn("Pon - Pt (Od)", width="small"),
+            "Pon - Pt (Do)": st.column_config.TextColumn("Pon - Pt (Do)", width="small"),
+            "Sobota (Od)": st.column_config.TextColumn("Sobota (Od)", width="small"),
+            "Sobota (Do)": st.column_config.TextColumn("Sobota (Do)", width="small"),
+            "Czynne w soboty": st.column_config.CheckboxColumn("Sobota czynna?"),
+            "Uwagi / Sezon": st.column_config.TextColumn("Uwagi (np. Sezon zimowy)")
+        }
+    )
+
+    st.markdown("---")
+
+    # --- SEKCJA C: HASŁO, E-MAILE I NAGŁÓWEK ---
+    st.subheader("🔐 Dostęp Pracowników i Nagłówek Kalendarza")
+    c_p1, c_p2 = st.columns(2)
+    cfg_pwd = c_p1.text_input("Hasło dostępu do Panelu Warsztatu:", value=app_config.get("adminPassword", "admin"), type="password")
+    cfg_hdr = c_p2.text_input("Nagłówek kalendarza publicznego (telefon i nazwa):", value=app_config.get("publicHeader", "Wulkanizacja Michał - rezerwacja terminu 600223669"))
+
+    curr_emails_val = app_config.get("allowedEmails", ["michal@twoje4kola.pl", "alert@itover.pl"])
+    emails_txt = ", ".join(curr_emails_val) if isinstance(curr_emails_val, list) else str(curr_emails_val)
+    cfg_emails = st.text_area("Uprawnione adresy e-mail pracowników (rozdzielone przecinkami):", value=emails_txt)
+
+    if st.button("💾 Zapisz Całą Konfigurację i Słowniki", type="primary", use_container_width=True):
+        # 1. Zapis usług
+        new_services_list = []
+        for _, r in edited_srv_df.iterrows():
+            if str(r["Pełna nazwa usługi"]).strip():
+                new_services_list.append({
+                    "id": str(r["Identyfikator"]).strip(),
+                    "shortLabel": str(r["Etykieta skrócona"]).strip(),
+                    "name": str(r["Pełna nazwa usługi"]).strip(),
+                    "durationMinutes": int(r["Czas trwania (min)"]),
+                    "price": float(r["Domyślna cena (PLN)"])
+                })
+        app_config["services"] = new_services_list
+
+        # 2. Zapis miesięcy
+        new_m_dict = {}
+        for idx, r in edited_months_df.iterrows():
+            m_idx_str = str(idx + 1)
+            new_m_dict[m_idx_str] = {
+                "start": str(r["Pon - Pt (Od)"]).strip(),
+                "end": str(r["Pon - Pt (Do)"]).strip(),
+                "saturdayStart": str(r["Sobota (Od)"]).strip(),
+                "saturdayEnd": str(r["Sobota (Do)"]).strip(),
+                "workSaturday": bool(r["Czynne w soboty"]),
+                "note": str(r["Uwagi / Sezon"]).strip()
+            }
+        app_config["monthlyWorkingHours"] = new_m_dict
+
+        # 3. Zapis bezpieczeństwa i nagłówka
+        app_config["adminPassword"] = cfg_pwd.strip()
+        app_config["publicHeader"] = cfg_hdr.strip()
+        parsed_e = [x.strip().lower() for x in cfg_emails.split(",") if x.strip()]
+        app_config["allowedEmails"] = parsed_e
+
+        if save_config(app_config):
+            st.success("✅ Pomyślnie zapisano wszystkie zmiany w konfiguracji, słowniku usług i godzinach pracy!")
             st.rerun()
+        else:
+            st.error("Błąd podczas zapisywania konfiguracji do pliku.")
