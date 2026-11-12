@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import os
+import re
 from datetime import datetime, date, timedelta
 import pandas as pd
 import io
@@ -31,10 +32,10 @@ st.markdown("""
 
     /* Dopasowanie marginesów kontenera głównego */
     .block-container {
-        padding-top: 1.2rem !important;
+        padding-top: 1.0rem !important;
         padding-bottom: 2.5rem !important;
-        padding-left: 1.2rem !important;
-        padding-right: 1.2rem !important;
+        padding-left: 1.0rem !important;
+        padding-right: 1.0rem !important;
         max-width: 1300px !important;
     }
 
@@ -44,7 +45,6 @@ st.markdown("""
         border-right: 1px solid #1e293b !important;
     }
 
-    /* Ukrycie domyślnego niepotrzebnego nagłówka Streamlit */
     header[data-testid="stHeader"] {
         background: transparent !important;
     }
@@ -57,7 +57,7 @@ st.markdown("""
         border: 1px solid #38bdf8 !important;
         border-radius: 8px !important;
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35) !important;
-        min-height: 44px !important;
+        min-height: 42px !important;
         transition: all 0.2s ease;
     }
     button[kind="primary"]:hover {
@@ -70,7 +70,7 @@ st.markdown("""
         color: #f8fafc !important;
         border: 1px solid #23314d !important;
         border-radius: 8px !important;
-        min-height: 42px !important;
+        min-height: 40px !important;
     }
     button[kind="secondary"]:hover {
         background: #1e293b !important;
@@ -82,7 +82,7 @@ st.markdown("""
         background: linear-gradient(145deg, #151d30, #131b2e) !important;
         border: 1px solid #23314d !important;
         border-radius: 12px !important;
-        padding: 14px 18px !important;
+        padding: 12px 16px !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
     }
     div[data-testid="stMetric"] label {
@@ -96,17 +96,6 @@ st.markdown("""
     }
 
     /* Pasek nagłówkowy aplikacji */
-    .top-app-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: #101726;
-        border: 1px solid #1e293b;
-        border-radius: 12px;
-        padding: 12px 18px;
-        margin-bottom: 14px;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-    }
     .top-brand {
         display: flex;
         align-items: center;
@@ -132,8 +121,8 @@ st.markdown("""
         background: linear-gradient(135deg, #0369a1, #0284c7);
         border: 1px solid #38bdf8;
         border-radius: 12px;
-        padding: 14px 18px;
-        margin-bottom: 18px;
+        padding: 12px 18px;
+        margin-bottom: 14px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -158,24 +147,19 @@ st.markdown("""
         align-items: center;
         gap: 6px;
         box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-        transition: transform 0.15s ease;
-    }
-    .phone-call-btn:hover {
-        transform: scale(1.03);
-        background: #f0f9ff;
     }
 
     /* Pasek legendy */
     .legend-container {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         flex-wrap: wrap;
         background: #131b2e;
-        padding: 10px 14px;
-        border-radius: 10px;
+        padding: 8px 14px;
+        border-radius: 8px;
         border: 1px solid #23314d;
-        margin-bottom: 18px;
+        margin-bottom: 14px;
         font-size: 12px;
     }
     .legend-title {
@@ -190,7 +174,7 @@ st.markdown("""
         color: #e2e8f0;
         font-weight: 600;
         background: rgba(255, 255, 255, 0.04);
-        padding: 4px 8px;
+        padding: 3px 8px;
         border-radius: 6px;
         border: 1px solid #1e293b;
     }
@@ -205,21 +189,21 @@ st.markdown("""
         background: #101726;
         border: 1px solid #1e293b;
         border-radius: 10px;
-        padding: 12px 16px;
-        margin-bottom: 14px;
+        padding: 10px 14px;
+        margin-bottom: 12px;
         display: flex;
         align-items: center;
         justify-content: space-between;
     }
     .station-title {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 800;
         color: #f8fafc;
     }
     .station-badge-count {
         font-size: 12px;
         font-weight: 700;
-        padding: 4px 10px;
+        padding: 3px 10px;
         border-radius: 20px;
     }
     .count-busy {
@@ -237,14 +221,10 @@ st.markdown("""
     .app-card-box {
         background: #151d30;
         border-radius: 10px;
-        padding: 14px 16px;
-        margin-bottom: 12px;
+        padding: 12px 14px;
+        margin-bottom: 10px;
         border: 1.5px solid #23314d;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        transition: transform 0.15s ease;
-    }
-    .app-card-box:hover {
-        transform: translateY(-2px);
     }
     .app-card-box.type-stal {
         border-color: #38bdf8;
@@ -271,15 +251,15 @@ st.markdown("""
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
     .time-badge {
-        font-size: 14px;
+        font-size: 13.5px;
         font-weight: 800;
         color: #ffffff;
         background: rgba(0, 0, 0, 0.45);
-        padding: 3px 8px;
-        border-radius: 6px;
+        padding: 2px 7px;
+        border-radius: 5px;
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
     .duration-badge {
@@ -288,52 +268,42 @@ st.markdown("""
         color: #94a3b8;
     }
     .service-badge {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 800;
         color: #f8fafc;
-        display: flex;
-        align-items: center;
-        gap: 6px;
     }
 
-    /* Okno dialogowe / panel logowania */
-    .login-modal-box {
-        background: #131b2e;
-        border: 2px solid #0284c7;
-        border-radius: 14px;
-        padding: 22px;
-        margin-bottom: 24px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-        max-width: 520px;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    .login-modal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+    /* Karta wyniku wyszukiwania terminu / Agenta AI */
+    .slot-result-card {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 78, 59, 0.2));
+        border: 1.5px solid #10b981;
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 10px;
         margin-bottom: 14px;
-        border-bottom: 1px solid #1e293b;
-        padding-bottom: 10px;
     }
-    .login-modal-title {
-        font-size: 17px;
+    .slot-result-title {
+        color: #34d399;
+        font-size: 16px;
         font-weight: 800;
-        color: #ffffff;
+        margin-bottom: 8px;
+    }
+
+    /* Tabela cennika */
+    .price-table-box {
+        background: #131b2e;
+        border: 1px solid #23314d;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 14px;
     }
 
     /* Responsywność dla telefonów (ekrany <= 768px) */
     @media (max-width: 768px) {
         .block-container {
-            padding-left: 0.6rem !important;
-            padding-right: 0.6rem !important;
-            padding-top: 0.8rem !important;
-        }
-        .top-app-header {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-            padding: 10px 14px;
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            padding-top: 0.6rem !important;
         }
         .phone-hero-banner {
             flex-direction: column;
@@ -347,12 +317,6 @@ st.markdown("""
         .legend-container {
             font-size: 11px;
             gap: 6px;
-        }
-        .service-badge {
-            font-size: 13px;
-        }
-        .time-badge {
-            font-size: 13px;
         }
     }
 </style>
@@ -383,19 +347,29 @@ def save_db(data):
 
 def load_config():
     target = CONFIG_FILE if os.path.exists(CONFIG_FILE) else PUBLIC_CONFIG_FILE
+    default_services = [
+        {"id": "steel_4", "shortLabel": "Stal", "name": "Stal - 4 koła stalowe (osobowe)", "durationMinutes": 45, "price": 120},
+        {"id": "alu_small", "shortLabel": "Alu", "name": "Alu - koła aluminiowe <= 17 cali", "durationMinutes": 45, "price": 140},
+        {"id": "alu_premium", "shortLabel": "AluPremium", "name": "AluPremium - koła aluminiowe > 17 cali", "durationMinutes": 60, "price": 180},
+        {"id": "bus", "shortLabel": "Bus", "name": "Bus - samochód dostawczy", "durationMinutes": 60, "price": 200},
+        {"id": "quick", "shortLabel": "Szybki", "name": "Szybki serwis / wyważenie / 2 koła", "durationMinutes": 30, "price": 60}
+    ]
     if not os.path.exists(target):
         return {
             "adminPassword": "admin",
             "allowedEmails": ["michal@twoje4kola.pl", "alert@itover.pl"],
             "publicHeader": "Wulkanizacja Michał - rezerwacja terminu 600223669",
             "stationsCount": 2,
-            "services": []
+            "services": default_services
         }
     try:
         with open(target, "r", encoding="utf-8") as f:
-            return json.load(f)
+            cfg = json.load(f)
+            if not cfg.get("services"):
+                cfg["services"] = default_services
+            return cfg
     except Exception:
-        return {}
+        return {"services": default_services}
 
 def save_config(cfg):
     try:
@@ -415,6 +389,167 @@ def calculate_days(deposit_date_str):
     except Exception:
         return 0
 
+# --- ALGORYTM WYSZUKIWANIA NAJBLIŻSZEGO WOLNEGO TERMINU ---
+def is_polish_holiday(d):
+    fixed = [
+        (1, 1), (1, 6), (5, 1), (5, 3), (8, 15),
+        (11, 1), (11, 11), (12, 25), (12, 26)
+    ]
+    return (d.month, d.day) in fixed
+
+def get_working_hours(d, cfg):
+    if d.weekday() == 6:  # Niedziela
+        return None
+    if is_polish_holiday(d):
+        return None
+    month_key = str(d.month)
+    monthly = cfg.get("monthlyWorkingHours", {})
+    m_cfg = monthly.get(month_key, {
+        "start": "08:00", "end": "18:00",
+        "saturdayStart": "08:00", "saturdayEnd": "14:00", "workSaturday": True
+    })
+
+    if d.weekday() == 5:  # Sobota
+        if not m_cfg.get("workSaturday", True):
+            return None
+        return {
+            "start": m_cfg.get("saturdayStart", "08:00"),
+            "end": m_cfg.get("saturdayEnd", "14:00")
+        }
+    return {
+        "start": m_cfg.get("start", "08:00"),
+        "end": m_cfg.get("end", "18:00")
+    }
+
+def find_first_free_slot(appointments, cfg, duration=45, start_from=None, station_pref=0):
+    if not start_from:
+        start_from = date.today()
+    cur_d = start_from
+    for _ in range(30):
+        wh = get_working_hours(cur_d, cfg)
+        if wh:
+            d_str = cur_d.strftime("%Y-%m-%d")
+            sh, sm = map(int, wh["start"].split(":"))
+            eh, em = map(int, wh["end"].split(":"))
+            start_m = sh * 60 + sm
+            end_m = eh * 60 + em
+
+            if cur_d == date.today():
+                now_m = datetime.now().hour * 60 + datetime.now().minute
+                if now_m > start_m:
+                    start_m = ((now_m + 15) // 15) * 15
+
+            day_apps = [a for a in appointments if a.get("date") == d_str]
+            stations = [station_pref] if station_pref in [1, 2] else [1, 2]
+
+            for s in range(start_m, end_m - duration + 1, 15):
+                e = s + duration
+                for st in stations:
+                    collision = False
+                    for a in day_apps:
+                        if int(a.get("station", 1)) == st:
+                            ash, asm = map(int, a.get("startTime", "00:00").split(":"))
+                            aeh, aem = map(int, a.get("endTime", "00:00").split(":"))
+                            astart = ash * 60 + asm
+                            aend = aeh * 60 + aem
+                            if astart < e and aend > s:
+                                collision = True
+                                break
+                    if not collision:
+                        return {
+                            "date": d_str,
+                            "startTime": f"{s // 60:02d}:{s % 60:02d}",
+                            "endTime": f"{e // 60:02d}:{e % 60:02d}",
+                            "durationMinutes": duration,
+                            "station": st
+                        }
+        cur_d += timedelta(days=1)
+    return None
+
+# --- PARSER INTELIGENTNEGO ASYSTENTA AI ---
+def parse_ai_prompt(prompt_text, appointments, cfg):
+    p = prompt_text.lower().strip()
+    services = cfg.get("services", [])
+    
+    # 1. Usługa
+    target_srv = None
+    if "premium" in p:
+        target_srv = next((s for s in services if "premium" in s.get("id", "").lower()), None)
+    elif "alu" in p:
+        target_srv = next((s for s in services if "alu" in s.get("id", "").lower() and "premium" not in s.get("id", "").lower()), None)
+    elif "bus" in p or "dostawcz" in p:
+        target_srv = next((s for s in services if "bus" in s.get("id", "").lower()), None)
+    elif "szybki" in p or "wyważ" in p:
+        target_srv = next((s for s in services if "quick" in s.get("id", "").lower() or "szybki" in s.get("name", "").lower()), None)
+    elif "stal" in p:
+        target_srv = next((s for s in services if "steel" in s.get("id", "").lower() or "stal" in s.get("name", "").lower()), None)
+    
+    if not target_srv and services:
+        target_srv = services[0]
+
+    dur = target_srv.get("durationMinutes", 45) if target_srv else 45
+    price = target_srv.get("price", 140) if target_srv else 140
+
+    # 2. Stanowisko
+    station = 0
+    if "stanowisko 2" in p or "podnośnik b" in p or "st 2" in p:
+        station = 2
+    elif "stanowisko 1" in p or "podnośnik a" in p or "st 1" in p:
+        station = 1
+
+    # 3. Data
+    target_d = date.today()
+    if "jutro" in p:
+        target_d = date.today() + timedelta(days=1)
+    elif "pojutrze" in p:
+        target_d = date.today() + timedelta(days=2)
+    else:
+        weekdays_map = {
+            "poniedział": 0, "wtorek": 1, "wtork": 1, "środ": 2, "srod": 2,
+            "czwartek": 3, "czwartk": 3, "piątek": 4, "piatk": 4, "sobot": 5
+        }
+        for k, v in weekdays_map.items():
+            if k in p:
+                diff = (v - date.today().weekday()) % 7
+                if diff == 0 and "dziś" not in p and "dzisiaj" not in p:
+                    diff = 7
+                target_d = date.today() + timedelta(days=diff)
+                break
+        
+        # Konkretny dzień np. 13-go, 13 listopada
+        m_day = re.search(r'(\d{1,2})(?:-go|-ego|\.|\s)?\s*(listopad|grudzi|stycz|luty|marz|kwiet|maj|czerwc|lipc|sierp|wrzes|pa[źz]dzier)?', p)
+        if m_day and m_day.group(1):
+            try:
+                target_d = target_d.replace(day=int(m_day.group(1)))
+            except Exception:
+                pass
+
+    # 4. Numer rejestracyjny
+    m_plate = re.search(r'\b([A-Z]{2,3}\s?[0-9A-Z]{4,5})\b', prompt_text.upper())
+    plate = m_plate.group(1).replace(" ", "") if m_plate else ""
+
+    # 5. Akronim / Klient
+    client_name = "KLIENT"
+    m_akr = re.search(r'(?:akronim|klient|dla|wpisz)\s+([A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż0-9]+)', prompt_text, re.IGNORECASE)
+    if m_akr:
+        val = m_akr.group(1).strip()
+        if val.lower() not in ["na", "pierwszy", "wolny", "termin", "jutro", "piątek", "alu"]:
+            client_name = val
+
+    # 6. Wyszukanie slotu
+    slot = find_first_free_slot(appointments, cfg, dur, target_d, station)
+    if not slot and station != 0:
+        slot = find_first_free_slot(appointments, cfg, dur, target_d, 0)
+
+    return {
+        "service": target_srv,
+        "slot": slot,
+        "plate": plate,
+        "client": client_name,
+        "price": price,
+        "duration": dur
+    }
+
 # Wczytujemy dane
 db_data = load_db()
 app_config = load_config()
@@ -428,8 +563,10 @@ if "show_login_modal" not in st.session_state:
     st.session_state["show_login_modal"] = False
 if "cal_date" not in st.session_state:
     st.session_state["cal_date"] = date.today()
+if "ai_proposed_visit" not in st.session_state:
+    st.session_state["ai_proposed_visit"] = None
 
-# --- GÓRNY PASEK NAWIGACJI (RESPONSYWNY DLA PC I TELEFONÓW) ---
+# --- GÓRNY PASEK NAWIGACJI ---
 header_col1, header_col2 = st.columns([3, 1])
 
 with header_col1:
@@ -461,54 +598,45 @@ with header_col2:
             st.session_state["show_login_modal"] = False
             st.rerun()
 
-# --- OKIENKO LOGOWANIA (WYŚWIETLANE TYLKO GDY UŻYTKOWNIK KLIKNIE 'ZALOGUJ') ---
+# --- OKIENKO LOGOWANIA ---
 if not st.session_state["authenticated"] and st.session_state["show_login_modal"]:
-    st.markdown("""
-    <div class="login-modal-box">
-        <div class="login-modal-header">
-            <div class="login-modal-title">🔐 Logowanie do Panelu Warsztatu</div>
-        </div>
-        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 12px;">
-            Dostęp zastrzeżony dla pracowników. Wpisz uprawniony adres e-mail i hasło dostępowe.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("---")
+    login_c1, login_c2, login_c3 = st.columns([1, 2, 1])
+    with login_c2:
+        st.markdown("### 🔐 Logowanie do Panelu Warsztatu")
+        st.caption("Dostęp zastrzeżony dla pracowników. Wpisz uprawniony adres e-mail i hasło dostępowe.")
+        login_email = st.text_input("Adres e-mail:", placeholder="Wpisz adres e-mail", key="input_login_email").strip().lower()
+        login_password = st.text_input("Hasło dostępowe:", type="password", key="input_login_pass")
+        
+        b_log, b_close = st.columns(2)
+        if b_log.button("Zaloguj się →", type="primary", use_container_width=True):
+            allowed_list = app_config.get("allowedEmails", ["michal@twoje4kola.pl", "alert@itover.pl"])
+            if isinstance(allowed_list, str):
+                allowed_list = [x.strip().lower() for x in allowed_list.split(",") if x.strip()]
+            else:
+                allowed_list = [str(x).strip().lower() for x in allowed_list]
 
-    with st.container():
-        login_c1, login_c2, login_c3 = st.columns([1, 2, 1])
-        with login_c2:
-            login_email = st.text_input("Adres e-mail:", placeholder="Wpisz adres e-mail", key="input_login_email").strip().lower()
-            login_password = st.text_input("Hasło dostępowe:", type="password", key="input_login_pass")
-            
-            b_log, b_close = st.columns(2)
-            if b_log.button("Zaloguj się →", type="primary", use_container_width=True):
-                allowed_list = app_config.get("allowedEmails", ["michal@twoje4kola.pl", "alert@itover.pl"])
-                if isinstance(allowed_list, str):
-                    allowed_list = [x.strip().lower() for x in allowed_list.split(",") if x.strip()]
-                else:
-                    allowed_list = [str(x).strip().lower() for x in allowed_list]
+            is_email_valid = (
+                "*" in allowed_list or 
+                login_email in allowed_list or 
+                login_email == "admin"
+            )
+            correct_password = str(app_config.get("adminPassword", "admin")).strip()
 
-                is_email_valid = (
-                    "*" in allowed_list or 
-                    login_email in allowed_list or 
-                    login_email == "admin"
-                )
-                correct_password = str(app_config.get("adminPassword", "admin")).strip()
-
-                if not is_email_valid:
-                    st.error("Brak uprawnień dla podanego adresu e-mail.")
-                elif login_password != correct_password:
-                    st.error("Nieprawidłowe hasło.")
-                else:
-                    st.session_state["authenticated"] = True
-                    st.session_state["logged_user"] = login_email
-                    st.session_state["show_login_modal"] = False
-                    st.success("Zalogowano pomyślnie!")
-                    st.rerun()
-
-            if b_close.button("Anuluj", use_container_width=True):
+            if not is_email_valid:
+                st.error("Brak uprawnień dla podanego adresu e-mail.")
+            elif login_password != correct_password:
+                st.error("Nieprawidłowe hasło.")
+            else:
+                st.session_state["authenticated"] = True
+                st.session_state["logged_user"] = login_email
                 st.session_state["show_login_modal"] = False
+                st.success("Zalogowano pomyślnie!")
                 st.rerun()
+
+        if b_close.button("Anuluj", use_container_width=True):
+            st.session_state["show_login_modal"] = False
+            st.rerun()
     st.markdown("---")
 
 # --- PASEK BOCZNY (SIDEBAR) – WIDOCZNY TYLKO DLA ZALOGOWANYCH ---
@@ -520,9 +648,9 @@ if st.session_state["authenticated"]:
         "Nawigacja:",
         [
             "👁️ Podgląd Publiczny (dla Klientów)",
+            "📅 Kalendarz Wizyt (Admin)",
             "📊 Dashboard & Magazyn Opon",
             "➕ Przyjmij Nowy Depozyt",
-            "📅 Kalendarz Wizyt (Admin)",
             "📜 Archiwum Wydanych Opon",
             "⚙️ Konfiguracja & Uprawnienia"
         ]
@@ -543,7 +671,6 @@ if st.session_state["authenticated"]:
         st.session_state["logged_user"] = ""
         st.rerun()
 else:
-    # Niezalogowany widzi wyłącznie podgląd publiczny
     menu_choice = "👁️ Podgląd Publiczny (dla Klientów)"
 
 
@@ -551,7 +678,6 @@ else:
 # 1. WIDOK TERMINARZA DLA KLIENTÓW (PUBLICZNY & RESPONSIVE)
 # ==========================================================
 if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
-    # Baner z bezpośrednim połączeniem tel:
     st.markdown("""
     <div class="phone-hero-banner">
         <div class="phone-banner-text">
@@ -567,16 +693,55 @@ if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
     st.markdown("""
     <div class="legend-container">
         <span class="legend-title">Usługi:</span>
-        <span class="legend-chip"><span class="legend-dot" style="background: #0284c7;"></span> Stal (45m)</span>
-        <span class="legend-chip"><span class="legend-dot" style="background: #10b981;"></span> Alu ≤ 17" (45m)</span>
-        <span class="legend-chip"><span class="legend-dot" style="background: #8b5cf6;"></span> AluPremium > 17" (1h)</span>
-        <span class="legend-chip"><span class="legend-dot" style="background: #f59e0b;"></span> Bus (1h)</span>
-        <span class="legend-chip"><span class="legend-dot" style="background: #ec4899;"></span> Szybki (30m)</span>
+        <span class="legend-chip"><span class="legend-dot" style="background: #0284c7;"></span> Stal (45m - 120 zł)</span>
+        <span class="legend-chip"><span class="legend-dot" style="background: #10b981;"></span> Alu ≤ 17" (45m - 140 zł)</span>
+        <span class="legend-chip"><span class="legend-dot" style="background: #8b5cf6;"></span> AluPremium > 17" (1h - 180 zł)</span>
+        <span class="legend-chip"><span class="legend-dot" style="background: #f59e0b;"></span> Bus (1h - 200 zł)</span>
+        <span class="legend-chip"><span class="legend-dot" style="background: #ec4899;"></span> Szybki (30m - 60 zł)</span>
         <span style="margin-left: auto; color: #38bdf8; font-weight: 700;">🕒 08:00 – 18:00</span>
     </div>
     """, unsafe_allow_html=True)
 
-    # Nawigacja datami (duże, wygodne przyciski na telefonie)
+    # WYSZUKIWARKA WOLNEGO TERMINU DLA KLIENTA (EXPANDER)
+    with st.expander("⚡ Sprawdź najbliższy wolny termin i koszt usługi", expanded=False):
+        q_srv_col, q_date_col, q_btn_col = st.columns([2, 1, 1])
+        services = app_config.get("services", [])
+        srv_map = {f"{s.get('name')} ({s.get('price')} zł)": s for s in services}
+        chosen_q_srv = q_srv_col.selectbox("Wybierz rodzaj usługi:", list(srv_map.keys()), key="pub_q_srv")
+        chosen_srv_obj = srv_map[chosen_q_srv]
+        q_start_d = q_date_col.date_input("Od kiedy szukać:", value=date.today(), key="pub_q_date")
+        
+        if q_btn_col.button("🔍 Znajdź termin", type="primary", use_container_width=True, key="pub_q_btn"):
+            slot = find_first_free_slot(db_data.get("appointments", []), app_config, chosen_srv_obj.get("durationMinutes", 45), q_start_d)
+            if slot:
+                st.session_state["pub_found_slot"] = {
+                    "slot": slot,
+                    "service": chosen_srv_obj
+                }
+            else:
+                st.session_state["pub_found_slot"] = None
+                st.warning("Brak wolnych terminów w najbliższym czasie.")
+
+        if st.session_state.get("pub_found_slot"):
+            fs = st.session_state["pub_found_slot"]["slot"]
+            srv_o = st.session_state["pub_found_slot"]["service"]
+            st.markdown(f"""
+            <div class="slot-result-card">
+                <div class="slot-result-title">🎉 Znaleziono najbliższy wolny termin!</div>
+                <div style="font-size: 15px; color: #f8fafc; line-height: 1.6;">
+                    📅 <strong>Data:</strong> {fs['date']}<br>
+                    ⏰ <strong>Godzina:</strong> {fs['startTime']} – {fs['endTime']} ({fs['durationMinutes']} min)<br>
+                    🚗 <strong>Stanowisko:</strong> Stanowisko {fs['station']} (Podnośnik {'A' if fs['station']==1 else 'B'})<br>
+                    🔧 <strong>Usługa:</strong> {srv_o.get('name')}<br>
+                    💰 <strong>Cena usługi:</strong> <span style="font-size: 17px; color: #38bdf8; font-weight: 800;">{srv_o.get('price')} zł</span>
+                </div>
+                <div style="margin-top: 12px;">
+                    <a href="tel:600223669" class="phone-call-btn">📞 Zadzwoń i zarezerwuj ten termin: 600 223 669</a>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # Nawigacja dniami kalendarza
     nav_c1, nav_c2, nav_c3, nav_picker = st.columns([1, 1, 1, 2])
 
     if nav_c1.button("◀ Wczoraj", use_container_width=True):
@@ -589,11 +754,7 @@ if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
         st.session_state["cal_date"] += timedelta(days=1)
         st.rerun()
 
-    chosen_d = nav_picker.date_input(
-        "Wybierz dzień:",
-        value=st.session_state["cal_date"],
-        label_visibility="collapsed"
-    )
+    chosen_d = nav_picker.date_input("Wybierz dzień:", value=st.session_state["cal_date"], label_visibility="collapsed")
     if chosen_d != st.session_state["cal_date"]:
         st.session_state["cal_date"] = chosen_d
         st.rerun()
@@ -608,7 +769,7 @@ if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
 
     st.markdown(f"### 📅 {formatted_date_title}")
 
-    # Pobieramy wizyty na wybrany dzień
+    # Pobieramy wizyty
     appointments = db_data.get("appointments", [])
     day_apps = [a for a in appointments if a.get("date") == date_str]
     st1_apps = [a for a in day_apps if int(a.get("station", 1)) == 1]
@@ -641,11 +802,11 @@ if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
         </div>
         """, unsafe_allow_html=True)
 
-    # Przełącznik widoku: Na telefonach użytkownik może wybrać konkretne stanowisko lub widzieć oba
-    tab_all, tab_st1, tab_st2 = st.tabs([
-        "🏢 Wszystkie stanowiska (Podgląd zbiorczy)",
+    tab_all, tab_st1, tab_st2, tab_prices = st.tabs([
+        "🏢 Wszystkie stanowiska (Podgląd)",
         f"🚗 Stanowisko 1 ({len(st1_apps)} zajęte)",
-        f"🚙 Stanowisko 2 ({len(st2_apps)} zajęte)"
+        f"🚙 Stanowisko 2 ({len(st2_apps)} zajęte)",
+        "💳 Cennik Usług"
     ])
 
     with tab_all:
@@ -663,7 +824,7 @@ if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
                 for app in sorted(st1_apps, key=lambda x: x.get("startTime", "")):
                     render_app_card(app)
             else:
-                st.info("✓ Brak rezerwacji na tym stanowisku – terminy w pełni wolne!")
+                st.info("✓ Wszystkie godziny wolne na Stanowisku 1!")
 
         with col_st2:
             st.markdown(f"""
@@ -678,7 +839,7 @@ if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
                 for app in sorted(st2_apps, key=lambda x: x.get("startTime", "")):
                     render_app_card(app)
             else:
-                st.info("✓ Brak rezerwacji na tym stanowisku – terminy w pełni wolne!")
+                st.info("✓ Wszystkie godziny wolne na Stanowisku 2!")
 
     with tab_st1:
         st.markdown("#### 🚗 Stanowisko 1 (Podnośnik A)")
@@ -696,12 +857,246 @@ if menu_choice == "👁️ Podgląd Publiczny (dla Klientów)":
         else:
             st.success("✓ Stanowisko 2 jest wolne w wybranym dniu!")
 
+    with tab_prices:
+        st.markdown("#### 💳 Oficjalny Cennik Usług Wymiany i Serwisu Opon")
+        df_p = pd.DataFrame(app_config.get("services", []))
+        if not df_p.empty:
+            st.dataframe(df_p[["name", "durationMinutes", "price"]].rename(columns={
+                "name": "Nazwa Usługi",
+                "durationMinutes": "Czas trwania (min)",
+                "price": "Cena (PLN)"
+            }), use_container_width=True)
+
     st.markdown("---")
-    st.info("💡 **Chcesz zarezerwować termin?** Zadzwoń bezpośrednio pod numer **600 223 669**.")
+    st.info("💡 **Chcesz zarezerwować termin?** Zadzwoń pod numer **600 223 669**.")
 
 
 # ==========================================================
-# 2. DASHBOARD & MAGAZYN OPON (DLA ZALOGOWANYCH)
+# 2. KALENDARZ WIZYT (ADMIN DLA ZALOGOWANYCH)
+# ==========================================================
+elif menu_choice == "📅 Kalendarz Wizyt (Admin)" and st.session_state["authenticated"]:
+    st.header("📅 Zarządzanie Wizytami i Terminarzem")
+
+    # --- MODUŁ 1: INTELIGENTNY ASYSTENT PLANOWANIA AI (GEMINI) ---
+    with st.expander("🤖 Asystent Planowania AI (Google Gemini / Szybkie komendy)", expanded=True):
+        st.markdown("""
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;">
+            Wpisz polecenie w języku naturalnym, np. <em>"wpisz na piątek 13-go listopada Alu premium pierwszy wolny termin Stanowisko 2 Akronim Wojtek, rejestracja PRA 999WX"</em>
+        </p>
+        """, unsafe_allow_html=True)
+
+        chip_c1, chip_c2, chip_c3 = st.columns(3)
+        if chip_c1.button("⚡ Wpisz Bolka na jutro na Alu Premium", use_container_width=True):
+            st.session_state["ai_cmd_input"] = "wpisz Bolka na jutro na Alu Premium pierwszy wolny termin"
+        if chip_c2.button("🔍 Wolny termin na koła stalowe", use_container_width=True):
+            st.session_state["ai_cmd_input"] = "podaj najbliższy wolny termin na koła stalowe"
+        if chip_c3.button("📅 Bolek na jutro na 14:00 (Alu)", use_container_width=True):
+            st.session_state["ai_cmd_input"] = "wpisz Bolka na jutro na 14:00 koła aluminiowe"
+
+        cmd_val = st.text_area(
+            "Polecenie dla Asystenta:",
+            value=st.session_state.get("ai_cmd_input", "wpisz na piątek 13-go listopada Alu premium pierwszy wolny termin Stanowisko 2 Akronim Wojtek, rejestracja PRA 999WX"),
+            height=70
+        )
+
+        ac_c1, ac_c2 = st.columns([1, 2])
+        if ac_c1.button("✨ Wykonaj polecenie z Gemini", type="primary", use_container_width=True):
+            res = parse_ai_prompt(cmd_val, db_data.get("appointments", []), app_config)
+            if res and res.get("slot"):
+                st.session_state["ai_proposed_visit"] = res
+            else:
+                st.warning("Nie znaleziono pasującego wolnego terminu dla podanych kryteriów.")
+
+        if st.session_state.get("ai_proposed_visit"):
+            prop = st.session_state["ai_proposed_visit"]
+            pslot = prop["slot"]
+            psrv = prop["service"]
+            st.markdown(f"""
+            <div class="slot-result-card">
+                <div class="slot-result-title">🤖 Agent znalazł termin i przygotował wizytę!</div>
+                <div style="font-size: 14px; color: #e2e8f0; line-height: 1.6;">
+                    Znalazłem wolny termin na <strong>{pslot['date']}</strong> w godzinach <strong>{pslot['startTime']} – {pslot['endTime']}</strong> ({pslot['durationMinutes']} min).<br>
+                    Klient: <strong>{prop['client']}</strong> | Rejestracja: <strong>{prop['plate'] or 'Brak'}</strong> | Stanowisko: <strong>Stanowisko {pslot['station']} (Podnośnik {'A' if pslot['station']==1 else 'B'})</strong><br>
+                    Usługa: <strong>{psrv.get('name')}</strong> | Cena usługi: <strong style="color: #38bdf8;">{prop['price']} zł</strong>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            prop_save_c1, prop_save_c2 = st.columns([1, 1])
+            if prop_save_c1.button("✓ Zapisz i dodaj tę wizytę do kalendarza", type="primary", use_container_width=True):
+                new_app = {
+                    "id": f"app_{int(datetime.now().timestamp())}",
+                    "date": pslot["date"],
+                    "startTime": pslot["startTime"],
+                    "endTime": pslot["endTime"],
+                    "station": int(pslot["station"]),
+                    "carLicensePlate": prop["plate"],
+                    "clientAcronym": prop["client"],
+                    "clientPhone": "",
+                    "serviceId": psrv.get("id", "srv"),
+                    "serviceName": psrv.get("name"),
+                    "durationMinutes": int(pslot["durationMinutes"]),
+                    "price": float(prop["price"]),
+                    "status": "planned"
+                }
+                db_data["appointments"].append(new_app)
+                save_db(db_data)
+                st.session_state["ai_proposed_visit"] = None
+                st.session_state["cal_date"] = datetime.strptime(pslot["date"], "%Y-%m-%d").date()
+                st.success("Pomyślnie dodano wizytę!")
+                st.rerun()
+
+            if prop_save_c2.button("Anuluj", use_container_width=True):
+                st.session_state["ai_proposed_visit"] = None
+                st.rerun()
+
+    # --- MODUŁ 2: SZYBKIE WYSZUKIWANIE WOLNEGO TERMINU ---
+    with st.expander("⚡ Szybka Wyszukiwarka Pierwszego Wolnego Terminu", expanded=False):
+        sf_c1, sf_c2, sf_c3, sf_c4 = st.columns([2, 1, 1, 1])
+        services = app_config.get("services", [])
+        srv_opts = {f"{s.get('name')} ({s.get('price')} zł, {s.get('durationMinutes')}m)": s for s in services}
+        chosen_sf_srv = sf_c1.selectbox("Wybierz usługę:", list(srv_opts.keys()))
+        target_sf_obj = srv_opts[chosen_sf_srv]
+        sf_st = sf_c2.selectbox("Preferowane stanowisko:", [0, 1, 2], format_func=lambda x: "Dowolne" if x==0 else f"Stanowisko {x}")
+        sf_d = sf_c3.date_input("Szukaj od dnia:", value=date.today())
+        
+        if sf_c4.button("🔍 Znajdź termin", type="primary", use_container_width=True):
+            slot = find_first_free_slot(db_data.get("appointments", []), app_config, target_sf_obj.get("durationMinutes", 45), sf_d, sf_st)
+            if slot:
+                st.session_state["admin_found_slot"] = {
+                    "slot": slot,
+                    "service": target_sf_obj
+                }
+            else:
+                st.session_state["admin_found_slot"] = None
+                st.warning("Brak wolnych terminów.")
+
+        if st.session_state.get("admin_found_slot"):
+            fs = st.session_state["admin_found_slot"]["slot"]
+            so = st.session_state["admin_found_slot"]["service"]
+            st.success(f"Znaleziono wolny slot: {fs['date']} | Godz. {fs['startTime']} - {fs['endTime']} | Stanowisko {fs['station']} | Koszt: {so.get('price')} zł")
+            if st.button("📅 Wstaw ten termin do poniższego formularza"):
+                st.session_state["form_prefill"] = {
+                    "date": datetime.strptime(fs["date"], "%Y-%m-%d").date(),
+                    "start": fs["startTime"],
+                    "station": fs["station"],
+                    "service": so
+                }
+                st.rerun()
+
+    st.markdown("---")
+
+    # --- MODUŁ 3: LISTA WIZYT W WYBRANYM DNIU + PODSUMOWANIE FINANSOWE ---
+    adm_date = st.date_input("Wybierz dzień kalendarza do edycji:", value=st.session_state.get("cal_date", date.today()))
+    d_str = adm_date.strftime("%Y-%m-%d")
+
+    apps = db_data.get("appointments", [])
+    matching = [a for a in apps if a.get("date") == d_str]
+    total_rev = sum(float(a.get("price", 0)) for a in matching)
+
+    m_col1, m_col2, m_col3 = st.columns(3)
+    m_col1.metric("Zapisanych aut w tym dniu", len(matching))
+    m_col2.metric("Suma wartości usług", f"{total_rev:.0f} zł")
+    m_col3.metric("Stanowisko 1 / Stanowisko 2", f"{sum(1 for a in matching if int(a.get('station',1))==1)} / {sum(1 for a in matching if int(a.get('station',1))==2)}")
+
+    if matching:
+        df_apps = pd.DataFrame(matching)
+        cols_show = ["startTime", "endTime", "station", "carLicensePlate", "clientAcronym", "clientPhone", "serviceName", "price", "status"]
+        valid_cols = [c for c in cols_show if c in df_apps.columns]
+        st.dataframe(df_apps[valid_cols].rename(columns={
+            "startTime": "Od",
+            "endTime": "Do",
+            "station": "Stanowisko",
+            "carLicensePlate": "Rejestracja",
+            "clientAcronym": "Akronim",
+            "clientPhone": "Telefon",
+            "serviceName": "Usługa",
+            "price": "Cena",
+            "status": "Status"
+        }), use_container_width=True)
+
+        st.subheader("Usuń wybraną wizytę")
+        del_opts = {f"{a.get('startTime')}-{a.get('endTime')} | St.{a.get('station')} | {a.get('carLicensePlate')} ({a.get('clientAcronym')}) - {a.get('serviceName')}": a.get("id") for a in matching}
+        chosen_del = st.selectbox("Wybierz wizytę do usunięcia:", list(del_opts.keys()))
+        if st.button("🗑️ Usuń tę wizytę z kalendarza"):
+            aid = del_opts[chosen_del]
+            db_data["appointments"] = [a for a in apps if a.get("id") != aid]
+            save_db(db_data)
+            st.success("Usunięto wizytę.")
+            st.rerun()
+    else:
+        st.info("Brak zarezerwowanych wizyt w tym dniu.")
+
+    st.markdown("---")
+
+    # --- MODUŁ 4: FORMULARZ DODAWANIA WIZYTY Z PODGLĄDEM CENY I CZASU ---
+    st.subheader("➕ Dodaj nową wizytę ręcznie")
+    
+    prefill = st.session_state.get("form_prefill", {})
+
+    with st.form("manual_appointment_form"):
+        fa1, fa2, fa3 = st.columns(3)
+        a_plate = fa1.text_input("Numer Rejestracyjny *", value=prefill.get("plate", "")).upper().strip()
+        a_client = fa2.text_input("Akronim / Imię Klienta *", value=prefill.get("client", ""), placeholder="np. Nowak")
+        a_phone = fa3.text_input("Telefon kontaktowy", placeholder="np. 600 123 456")
+
+        fa4, fa5, fa6 = st.columns(3)
+        services = app_config.get("services", [])
+        srv_opts = {f"{s.get('name')} - {s.get('price')} zł ({s.get('durationMinutes')} min)": s for s in services}
+        chosen_srv_key = fa4.selectbox("Wybierz usługę:", list(srv_opts.keys()))
+        selected_srv = srv_opts[chosen_srv_key]
+
+        a_station = fa5.selectbox(
+            "Stanowisko:",
+            [1, 2],
+            index=1 if prefill.get("station") == 2 else 0,
+            format_func=lambda x: f"Stanowisko {x} (Podnośnik {'A' if x==1 else 'B'})"
+        )
+        a_start = fa6.text_input("Godzina rozpoczęcia (HH:MM):", value=prefill.get("start", "09:00"))
+
+        fa7, fa8 = st.columns(2)
+        dur = selected_srv.get("durationMinutes", 45)
+        default_p = selected_srv.get("price", 140)
+        a_price = fa7.number_input("Cena usługi (PLN):", value=float(default_p), step=10.0)
+
+        # Wyliczenie godziny zakończenia
+        try:
+            sh, sm = map(int, a_start.split(":"))
+            end_m_calc = sh * 60 + sm + dur
+            calc_end_str = f"{end_m_calc // 60:02d}:{end_m_calc % 60:02d}"
+        except Exception:
+            calc_end_str = "09:45"
+
+        fa8.info(f"⏱️ **Czas trwania:** {dur} min | ⏰ **Koniec wizyty:** {calc_end_str}")
+
+        if st.form_submit_button("💾 Dodaj wizytę do terminarza", type="primary"):
+            if not a_plate or not a_client:
+                st.error("Wpisz numer rejestracyjny i nazwisko/akronim klienta.")
+            else:
+                new_app = {
+                    "id": f"app_{int(datetime.now().timestamp())}",
+                    "date": d_str,
+                    "startTime": a_start,
+                    "endTime": calc_end_str,
+                    "station": int(a_station),
+                    "carLicensePlate": a_plate,
+                    "clientAcronym": a_client,
+                    "clientPhone": a_phone,
+                    "serviceId": selected_srv.get("id", "srv"),
+                    "serviceName": selected_srv.get("name"),
+                    "durationMinutes": dur,
+                    "price": float(a_price),
+                    "status": "planned"
+                }
+                db_data["appointments"].append(new_app)
+                save_db(db_data)
+                st.session_state["form_prefill"] = {}
+                st.success("Dodano wizytę do kalendarza!")
+                st.rerun()
+
+
+# ==========================================================
+# 3. DASHBOARD & MAGAZYN OPON (DLA ZALOGOWANYCH)
 # ==========================================================
 elif menu_choice == "📊 Dashboard & Magazyn Opon" and st.session_state["authenticated"]:
     st.header("📊 Stan Magazynu Opon")
@@ -795,7 +1190,7 @@ elif menu_choice == "📊 Dashboard & Magazyn Opon" and st.session_state["authen
 
 
 # ==========================================================
-# 3. PRZYJMIJ NOWY DEPOZYT (DLA ZALOGOWANYCH)
+# 4. PRZYJMIJ NOWY DEPOZYT (DLA ZALOGOWANYCH)
 # ==========================================================
 elif menu_choice == "➕ Przyjmij Nowy Depozyt" and st.session_state["authenticated"]:
     st.header("➕ Przyjęcie Nowego Depozytu Opon")
@@ -849,105 +1244,6 @@ elif menu_choice == "➕ Przyjmij Nowy Depozyt" and st.session_state["authentica
 
 
 # ==========================================================
-# 4. KALENDARZ WIZYT (ADMIN DLA ZALOGOWANYCH)
-# ==========================================================
-elif menu_choice == "📅 Kalendarz Wizyt (Admin)" and st.session_state["authenticated"]:
-    st.header("📅 Zarządzanie Wizytami i Terminarzem")
-
-    adm_date = st.date_input("Wybierz dzień do edycji:", value=date.today())
-    d_str = adm_date.strftime("%Y-%m-%d")
-
-    apps = db_data.get("appointments", [])
-    matching = [a for a in apps if a.get("date") == d_str]
-
-    st.subheader(f"Wizyty w dniu {d_str} (Zapisanych aut: {len(matching)})")
-    if matching:
-        df_apps = pd.DataFrame(matching)
-        cols_show = ["startTime", "endTime", "station", "carLicensePlate", "clientAcronym", "clientPhone", "serviceName", "price", "status"]
-        valid_cols = [c for c in cols_show if c in df_apps.columns]
-        st.dataframe(df_apps[valid_cols].rename(columns={
-            "startTime": "Od",
-            "endTime": "Do",
-            "station": "Stanowisko",
-            "carLicensePlate": "Rejestracja",
-            "clientAcronym": "Akronim",
-            "clientPhone": "Telefon",
-            "serviceName": "Usługa",
-            "price": "Cena",
-            "status": "Status"
-        }), use_container_width=True)
-
-        st.markdown("---")
-        st.subheader("Usuń wybraną wizytę")
-        del_opts = {f"{a.get('startTime')}-{a.get('endTime')} | St.{a.get('station')} | {a.get('carLicensePlate')} ({a.get('clientAcronym')})": a.get("id") for a in matching}
-        chosen_del = st.selectbox("Wybierz wizytę do usunięcia:", list(del_opts.keys()))
-        if st.button("🗑️ Usuń tę wizytę z kalendarza"):
-            aid = del_opts[chosen_del]
-            db_data["appointments"] = [a for a in apps if a.get("id") != aid]
-            save_db(db_data)
-            st.success("Usunięto wizytę.")
-            st.rerun()
-    else:
-        st.info("Brak zarezerwowanych wizyt w tym dniu.")
-
-    st.markdown("---")
-    st.subheader("➕ Dodaj nową wizytę ręcznie")
-    with st.form("manual_appointment"):
-        fa1, fa2, fa3 = st.columns(3)
-        a_plate = fa1.text_input("Numer Rejestracyjny *").upper().strip()
-        a_client = fa2.text_input("Akronim / Imię Klienta *", placeholder="np. Nowak")
-        a_phone = fa3.text_input("Telefon kontaktowy")
-
-        fa4, fa5, fa6 = st.columns(3)
-        services = app_config.get("services", [])
-        srv_opts = {s.get("name", s.get("id")): s for s in services} if services else {
-            "Stal (45 min)": {"id": "steel_4", "durationMinutes": 45, "price": 120, "name": "Koła stalowe"},
-            "Alu <= 17\" (45 min)": {"id": "alu_small", "durationMinutes": 45, "price": 140, "name": "Koła aluminiowe <= 17 cali"},
-            "AluPremium > 17\" (60 min)": {"id": "alu_premium", "durationMinutes": 60, "price": 180, "name": "AluPremium > 17 cali"},
-            "Bus (60 min)": {"id": "bus", "durationMinutes": 60, "price": 200, "name": "Samochód dostawczy"},
-            "Szybki serwis (30 min)": {"id": "quick", "durationMinutes": 30, "price": 60, "name": "Szybki serwis / wyważenie"}
-        }
-        chosen_srv_key = fa4.selectbox("Wybierz usługę:", list(srv_opts.keys()))
-        selected_srv = srv_opts[chosen_srv_key]
-
-        a_station = fa5.selectbox("Stanowisko:", [1, 2], format_func=lambda x: f"Stanowisko {x} (Podnośnik {'A' if x==1 else 'B'})")
-        a_start = fa6.text_input("Godzina rozpoczęcia (HH:MM):", value="09:00")
-
-        if st.form_submit_button("💾 Dodaj wizytę do terminarza", type="primary"):
-            if not a_plate or not a_client:
-                st.error("Wpisz numer rejestracyjny i nazwisko/akronim klienta.")
-            else:
-                dur = selected_srv.get("durationMinutes", 45)
-                try:
-                    sh, sm = map(int, a_start.split(":"))
-                    start_dt = datetime(2000, 1, 1, sh, sm)
-                    end_dt = start_dt + timedelta(minutes=dur)
-                    end_str = end_dt.strftime("%H:%M")
-                except Exception:
-                    end_str = a_start
-
-                new_app = {
-                    "id": f"app_{int(datetime.now().timestamp())}",
-                    "date": d_str,
-                    "startTime": a_start,
-                    "endTime": end_str,
-                    "station": int(a_station),
-                    "carLicensePlate": a_plate,
-                    "clientAcronym": a_client,
-                    "clientPhone": a_phone,
-                    "serviceId": selected_srv.get("id", "srv"),
-                    "serviceName": selected_srv.get("name", chosen_srv_key),
-                    "durationMinutes": dur,
-                    "price": selected_srv.get("price", 100),
-                    "status": "planned"
-                }
-                db_data["appointments"].append(new_app)
-                save_db(db_data)
-                st.success("Dodano wizytę do kalendarza!")
-                st.rerun()
-
-
-# ==========================================================
 # 5. ARCHIWUM WYDANYCH OPON (DLA ZALOGOWANYCH)
 # ==========================================================
 elif menu_choice == "📜 Archiwum Wydanych Opon" and st.session_state["authenticated"]:
@@ -988,6 +1284,11 @@ elif menu_choice == "⚙️ Konfiguracja & Uprawnienia" and st.session_state["au
         st.subheader("Ustawienia Terminarza Publicznego")
         curr_hdr = app_config.get("publicHeader", "Wulkanizacja Michał - rezerwacja terminu 600223669")
         new_hdr = st.text_input("Tekst w banerze kontaktowym:", value=curr_hdr)
+
+        st.subheader("Słownik Usług i Domyślne Ceny")
+        st.caption("Ceny i czasy trwania wykorzystywane przez Asystenta AI oraz formularz wizyt:")
+        df_services = pd.DataFrame(app_config.get("services", []))
+        st.dataframe(df_services, use_container_width=True)
 
         if st.form_submit_button("💾 Zapisz Konfigurację", type="primary"):
             app_config["adminPassword"] = new_pwd.strip()
