@@ -6,6 +6,18 @@ from datetime import datetime, date, timedelta
 import pandas as pd
 import io
 
+import streamlit as st
+
+hide_github_icon = """
+<style>
+.stAppToolbar [data-testid="stToolbarActions"] {
+    display: none;
+}
+</style>
+"""
+st.markdown(hide_github_icon, unsafe_allow_html=True)
+
+
 # --- KONFIGURACJA STRONY STREAMLIT ---
 st.set_page_config(
     page_title="4KołaMag - Terminarz i Magazyn Opon",
